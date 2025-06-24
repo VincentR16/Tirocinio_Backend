@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Session } from '../auth/session.entity';
@@ -55,8 +59,17 @@ export class AuthService {
   }
 
   async singIn(dto: SignInDto, req: Request) {
+    const existingUser = await this.userRepository.findOne({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Email già registrata');
+    }
+
     const { password } = dto;
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
     const user = this.userRepository.create({
       ...dto,
       password: hashedPassword,
@@ -64,10 +77,11 @@ export class AuthService {
     await this.userRepository.save(user);
 
     // Genera access e refresh token
-    const accessToken = this.jwtService.sign({ sub: user.id });
-    const refreshToken = uuid();
+    const accessToken = this.jwtService.sign({ sub: user.id }); //mettere qui expires
+    const refreshToken = uuid(); //usare anche qui jwtservice
 
     //Salva sessione
+    //generare salt
     const session = this.sessionRepository.create({
       user,
       refreshTokenHash: await bcrypt.hash(refreshToken, 10),

@@ -1,11 +1,15 @@
+import { Type } from 'class-transformer';
 import {
   IsDate,
   IsEmail,
+  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsPhoneNumber,
   IsString,
   IsStrongPassword,
 } from 'class-validator';
+import { UserRoles } from 'src/common/types/user_roles';
 
 export class SignInDto {
   @IsNotEmpty()
@@ -21,7 +25,7 @@ export class SignInDto {
   email: string;
 
   @IsNotEmpty()
-  @IsEmail()
+  @IsIn(['male', 'female', 'other'])
   gender: string;
 
   @IsNotEmpty()
@@ -29,8 +33,12 @@ export class SignInDto {
   phone: string;
 
   @IsNotEmpty()
+  @Type(() => Date)
   @IsDate()
   birthDate: Date;
+
+  @IsEnum(UserRoles)
+  role: UserRoles;
 
   @IsStrongPassword()
   password: string;
