@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
       envFilePath: ['.env'],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       validationSchema: configValidationSchema,
+      isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
