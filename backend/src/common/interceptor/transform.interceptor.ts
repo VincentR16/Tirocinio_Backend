@@ -14,7 +14,7 @@ export class TransformInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler<unknown>,
   ): Observable<Record<string, any>> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return next.handle().pipe(map((data) => instanceToPlain(data)));
   }
 }

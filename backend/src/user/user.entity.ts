@@ -1,6 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { UserRoles } from 'src/common/types/user_roles';
+import { Session } from '../auth/session.entity';
 
 @Entity()
 export class User {
@@ -31,4 +32,11 @@ export class User {
   @Column()
   @Exclude()
   password: string;
+
+  @Exclude()
+  @OneToMany(() => Session, (session) => session.user, {
+    nullable: true,
+    eager: true,
+  })
+  session: Session[];
 }
