@@ -127,12 +127,12 @@ export class AuthService {
     if (!session) throw new UnauthorizedException('Invalid session');
 
     //controllo e valido il refreshToken
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
+    const oldRefreshToken = req.cookies.refreshToken;
+    if (!oldRefreshToken) {
       throw new UnauthorizedException('Missing refresh token');
     }
     const isValid = await bcrypt.compare(
-      refreshToken,
+      oldRefreshToken,
       session.refreshTokenHash,
     );
     if (!isValid) {
@@ -143,9 +143,8 @@ export class AuthService {
     }
 
     //creo i token
-    const { refreshTokenHash, accessToken } = await this.createTokens(
-      session.user,
-    );
+    const { refreshTokenHash, accessToken, refreshToken } =
+      await this.createTokens(session.user);
 
     //salvo il refresh token nella sessione
     session.refreshTokenHash = refreshTokenHash;
