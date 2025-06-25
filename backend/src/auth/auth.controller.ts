@@ -3,13 +3,14 @@ import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/signUp.dto';
 import { Request, Response } from 'express';
 import { LogInDto } from './dto/logIn.dto';
+import { AuthenticatedRequest } from 'src/common/types/authRequest';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authservice: AuthService) {}
 
   @Post('/login')
-  async signup(
+  async login(
     @Body() credential: LogInDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -18,79 +19,40 @@ export class AuthController {
       credential,
       req,
     );
-
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 15, // 15 min
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14 giorni
-    });
+    //set dei cookie
+    this.setAuthCookies(res, accessToken, refreshToken);
 
     return { message: 'Login success' };
   }
 
-  @Post('/signin')
-  async signin(
+  @Post('/signUp')
+  async signUp(
     @Body() credential: SignUpDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken } = await this.authservice.singUp(
+    const { accessToken, refreshToken } = await this.authservice.signUp(
       credential,
       req,
     );
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 15, // 15 min
-    });
+    //set dei cookie
+    this.setAuthCookies(res, accessToken, refreshToken);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14 giorni
-    });
-
-    return { message: 'Login success' };
+    return { message: 'SignUp success' };
   }
 
   @Post('refresh')
   async refreshTokens(
-    @Req() req: RequestWithCookies,
+    @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({ message: 'Token mancante' });
-    }
+    const { accessToken, refreshToken } =
+      await this.authservice.refreshTokens(req);
 
-    const { accessToken, refreshToken: newRefreshToken } =
-      await this.authservice.refreshTokens(refreshToken);
+    //set dei cookie
+    this.setAuthCookies(res, accessToken, refreshToken);
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 15, // 15 minuti
-    });
-
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14 giorni
-    });
-
-    return { message: 'Token aggiornati con successo' };
+    return { message: 'Token refreshed!' };
   }
 
   @Post('/logout')
@@ -99,9 +61,24 @@ export class AuthController {
     res.clearCookie('refreshToken');
     return { message: 'Logout success' };
   }
-}
-interface RequestWithCookies extends Request {
-  cookies: {
-    refreshToken?: string;
-  };
+
+  private setAuthCookies(
+    res: Response,
+    accessToken: string,
+    refreshToken: string,
+  ) {
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 1000 * 60 * 15,
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+  }
 }

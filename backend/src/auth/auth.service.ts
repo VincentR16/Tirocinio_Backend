@@ -13,6 +13,8 @@ import { SignUpDto } from './dto/signUp.dto';
 import { LogInDto } from './dto/logIn.dto';
 import dayjs from 'dayjs';
 import * as bcrypt from 'bcrypt';
+import { JwtPayload } from 'src/common/types/jwtPayload';
+import { AuthenticatedRequest } from 'src/common/types/authRequest';
 
 @Injectable()
 export class AuthService {
@@ -32,23 +34,18 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const { email, password } = dto;
 
-    const user = await this.userRepository.findOneOrFail({
+    const user = await this.userRepository.findOne({
       where: { email },
     });
+
+    if (!user) throw new UnauthorizedException('Invalid Email');
 
     if (!(await bcrypt.compare(password, user.password)))
       throw new UnauthorizedException('Invalid credentials');
 
-    //Genera accessToken
-    const accessToken = this.jwtService.sign({ sub: user.id });
-    //Genera refreshToken
-    const refreshToken = this.jwtService.sign(
-      { sub: user.id },
-      { expiresIn: '14d' },
-    );
-
-    //genera chiave di sale
-    const salt = await bcrypt.genSalt();
+    //creo accessToken e refreshToken hashato
+    const { refreshTokenHash, accessToken, refreshToken } =
+      await this.createTokens(user);
 
     //elimino vecchia sessione per quel dispositivo
     await this.sessionRepository.delete({
@@ -58,10 +55,10 @@ export class AuthService {
 
     // Salva sessione nel DB
     const session = this.sessionRepository.create({
-      refreshTokenHash: await bcrypt.hash(refreshToken, salt),
+      refreshTokenHash: refreshTokenHash,
       deviceInfo: req.headers['user-agent'] || 'unknown',
       ipAddress: req.ip,
-      expiresAt: dayjs().add(14, 'days').toDate(),
+      expiresAt: dayjs().add(7, 'days').toDate(),
       user: user,
     });
 
@@ -73,21 +70,20 @@ export class AuthService {
     };
   }
 
-  async singUp(
+  async signUp(
     dto: SignUpDto,
     req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { password, email } = dto;
+    const { password, email, phone } = dto;
 
     const existingUser = await this.userRepository.findOne({
-      where: { email: email },
+      where: [{ email }, { phone }],
     });
-
-    if (existingUser) throw new BadRequestException('Email già registrata');
+    if (existingUser)
+      throw new BadRequestException('Email or Phone number already exists');
 
     //genera chiave di sale
     const salt = await bcrypt.genSalt();
-
     //hash sulla password
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -97,25 +93,16 @@ export class AuthService {
     });
     await this.userRepository.save(user);
 
-    // Genera access e refresh token
-    const accessToken = this.jwtService.sign({ sub: user.id });
-
-    //Genera refreshToken
-    const refreshToken = this.jwtService.sign(
-      { sub: user.id },
-      { expiresIn: '14d' },
-    );
-
-    //generare salt
-    const refreshSalt = await bcrypt.genSalt();
+    const { refreshTokenHash, accessToken, refreshToken } =
+      await this.createTokens(user);
 
     //Salva sessione
     const session = this.sessionRepository.create({
       user,
-      refreshTokenHash: await bcrypt.hash(refreshToken, refreshSalt),
+      refreshTokenHash: refreshTokenHash,
       deviceInfo: req.headers['user-agent'] || 'unknown',
       ipAddress: req.ip,
-      expiresAt: dayjs().add(14, 'days').toDate(),
+      expiresAt: dayjs().add(7, 'days').toDate(),
     });
     await this.sessionRepository.save(session);
 
@@ -126,23 +113,24 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(refreshToken: string) {
-    //recupero il payload per capire l utente
-    const payload: JwtPayload = await this.jwtService.verifyAsync(
-      refreshToken,
-      {
-        secret: process.env.JWT_REFRESH_SECRET,
-      },
-    );
-
-    //Trova tutte la sessione e cerca un match con bcrypt.compare
+  async refreshTokens(
+    req: AuthenticatedRequest,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    //Trova tutte la sessione per quello specifico dispositivo
     const session = await this.sessionRepository.findOne({
-      where: { user: { id: payload.sub } },
+      where: {
+        user: { id: req.user.userId },
+        deviceInfo: req.headers['user-agent'] || 'unknown',
+      },
       relations: ['user'],
     });
     if (!session) throw new UnauthorizedException('Invalid session');
 
-    //verifica scadenza se JWT anche per il refreshToken
+    //controllo e valido il refreshToken
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
     const isValid = await bcrypt.compare(
       refreshToken,
       session.refreshTokenHash,
@@ -150,34 +138,44 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-
     if (session.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token expired');
     }
 
-    //Genera nuovi token
-    const accessToken = this.jwtService.sign({ sub: session.user.id });
-    const newRefreshToken = this.jwtService.sign(
-      { sub: session.user.id },
-      { expiresIn: '14d' },
+    //creo i token
+    const { refreshTokenHash, accessToken } = await this.createTokens(
+      session.user,
     );
 
-    //Hasha e salva il nuovo refresh token
-    const salt = await bcrypt.genSalt();
-    const hashed = await bcrypt.hash(newRefreshToken, salt);
-    session.refreshTokenHash = hashed;
-
+    //salvo il refresh token nella sessione
+    session.refreshTokenHash = refreshTokenHash;
     await this.sessionRepository.save(session);
 
     return {
       accessToken,
-      refreshToken: newRefreshToken,
+      refreshToken,
     };
   }
-}
 
-interface JwtPayload {
-  sub: string;
-  iat: number;
-  exp: number;
+  private async createTokens(user: User): Promise<{
+    accessToken: string;
+    refreshTokenHash: string;
+    refreshToken: string;
+  }> {
+    const payload: JwtPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    //Genera accessToken
+    const accessToken = this.jwtService.sign(payload);
+    //Genera refreshToken
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    //genera chiave di sale
+    const salt = await bcrypt.genSalt();
+    const refreshTokenHash = await bcrypt.hash(refreshToken, salt);
+
+    return { accessToken, refreshTokenHash, refreshToken };
+  }
 }

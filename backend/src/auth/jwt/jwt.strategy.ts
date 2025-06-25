@@ -7,12 +7,17 @@ import { JwtPayload } from 'src/common/types/jwtPayload';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+        (req: Request & { cookies?: any }) => req?.cookies?.accessToken || null,
+      ]),
       secretOrKey: process.env.JWT_SECRET as string,
     });
   }
 
   validate(payload: JwtPayload) {
+    console.log('VALIDATE:', payload);
     return {
       userId: payload.userId,
       email: payload.email,

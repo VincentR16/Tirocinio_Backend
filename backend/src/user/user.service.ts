@@ -10,9 +10,9 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async getProfile(user: User) {
+  async getProfile(userId: string): Promise<User> {
     const result = await this.userRepository.findOne({
-      where: { email: user.email },
+      where: [{ id: userId }],
     });
 
     if (!result) throw new BadRequestException('Utente non trovato');
