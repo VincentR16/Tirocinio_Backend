@@ -9,7 +9,7 @@ import {
   IsString,
   IsStrongPassword,
 } from 'class-validator';
-import { UserRoles } from 'src/common/types/user_roles';
+import { UserRoles } from 'src/common/types/userRoles';
 
 export class SignUpDto {
   @IsNotEmpty()

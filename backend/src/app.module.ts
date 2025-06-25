@@ -9,7 +9,6 @@ import { AuthModule } from './auth/auth.module';
   imports: [
     ConfigModule.forRoot({
       envFilePath: ['.env'],
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       validationSchema: configValidationSchema,
       isGlobal: true,
     }),
