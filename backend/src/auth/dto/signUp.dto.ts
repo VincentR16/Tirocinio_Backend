@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { UserRoles } from 'src/common/types/user_roles';
 
-export class SignInDto {
+export class SignUpDto {
   @IsNotEmpty()
   @IsString()
   name: string;

@@ -4,12 +4,14 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptor/transform.interceptor';
 import { join } from 'path';
 import * as express from 'express';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const logger = new Logger();
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({

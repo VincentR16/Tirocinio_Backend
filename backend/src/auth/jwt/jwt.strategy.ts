@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { JwtPayload } from 'src/common/types/jwtPayload';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,15 +14,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   validate(payload: JwtPayload) {
     return {
-      userId: payload.sub,
+      userId: payload.userId,
       email: payload.email,
       role: payload.role,
     };
   }
-}
-
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
 }
