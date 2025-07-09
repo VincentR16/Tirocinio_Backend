@@ -48,9 +48,9 @@ export class User {
   })
   session: Session[];
 
-  @OneToOne(() => Patient, (patient) => patient.user)
+  @OneToOne(() => Patient, (patient) => patient.user, { eager: true })
   patient?: Patient;
 
-  @OneToOne(() => Doctor, (doctor) => doctor.user)
+  @OneToOne(() => Doctor, (doctor) => doctor.user, { eager: true })
   doctor?: Doctor;
 }

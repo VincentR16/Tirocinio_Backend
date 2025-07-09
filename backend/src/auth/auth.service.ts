@@ -15,6 +15,9 @@ import dayjs from 'dayjs';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from 'src/common/types/jwtPayload';
 import { AuthenticatedRequest } from 'src/common/types/authRequest';
+import { UserRoles } from 'src/common/types/userRoles';
+import { Patient } from 'src/patient/patient.entity';
+import { Doctor } from 'src/doctor/doctor.entity';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +27,12 @@ export class AuthService {
 
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
+
+    @InjectRepository(Patient)
+    private readonly patientRepository: Repository<Patient>,
+
+    @InjectRepository(Doctor)
+    private readonly doctorRepository: Repository<Doctor>,
 
     private readonly jwtService: JwtService,
   ) {}
@@ -74,7 +83,7 @@ export class AuthService {
     dto: SignUpDto,
     req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { password, email, phone } = dto;
+    const { ssn, ospidal, role, password, email, phone } = dto;
 
     const existingUser = await this.userRepository.findOne({
       where: [{ email }, { phone }],
@@ -105,6 +114,21 @@ export class AuthService {
       expiresAt: dayjs().add(7, 'days').toDate(),
     });
     await this.sessionRepository.save(session);
+
+    //creo la classe patient o la classe doctor a seconda di quale sia il ruolo
+    if (role === UserRoles.PATIENT) {
+      const patient = this.patientRepository.create({
+        ssn,
+        user,
+      });
+      await this.patientRepository.save(patient);
+    } else {
+      const doctor = this.doctorRepository.create({
+        ospidal,
+        user,
+      });
+      await this.doctorRepository.save(doctor);
+    }
 
     //Ritorna i token
     return {
