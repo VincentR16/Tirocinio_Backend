@@ -25,7 +25,7 @@ export class SignUpDto {
   email: string;
 
   @IsNotEmpty()
-  @IsIn(['male', 'female', 'other'])
+  @IsIn(['Male', 'Female', 'Other'])
   gender: string;
 
   @IsNotEmpty()
@@ -37,9 +37,17 @@ export class SignUpDto {
   @IsDate()
   birthDate: Date;
 
+  @IsNotEmpty()
   @IsEnum(UserRoles)
   role: UserRoles;
 
+  @IsNotEmpty()
   @IsStrongPassword()
   password: string;
+
+  @IsString()
+  ssn: string;
+
+  @IsString()
+  ospidal: string;
 }

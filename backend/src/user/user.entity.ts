@@ -1,7 +1,15 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { UserRoles } from 'src/common/types/userRoles';
 import { Session } from '../auth/session.entity';
+import { Patient } from 'src/patient/patient.entity';
+import { Doctor } from 'src/doctor/doctor.entity';
 
 @Entity()
 export class User {
@@ -39,4 +47,10 @@ export class User {
     eager: true,
   })
   session: Session[];
+
+  @OneToOne(() => Patient, (patient) => patient.user)
+  patient?: Patient;
+
+  @OneToOne(() => Doctor, (doctor) => doctor.user)
+  doctor?: Doctor;
 }
