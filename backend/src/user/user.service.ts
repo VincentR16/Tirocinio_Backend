@@ -10,7 +10,7 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async getProfile(userId: string): Promise<User> {
+  async getMe(userId: string): Promise<User> {
     const result = await this.userRepository.findOne({
       where: [{ id: userId }],
     });

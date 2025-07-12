@@ -26,7 +26,7 @@ export class AuthController {
     return { message: 'Login success' };
   }
 
-  @Post('/signUp')
+  @Post('/signup')
   async signUp(
     @Body() credential: SignUpDto,
     @Req() req: Request,

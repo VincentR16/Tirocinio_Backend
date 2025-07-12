@@ -9,8 +9,8 @@ import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('/profile')
+  @Get('/me')
   profile(@Req() req: AuthenticatedRequest): Promise<User> {
-    return this.userService.getProfile(req.user.userId);
+    return this.userService.getMe(req.user.userId);
   }
 }
