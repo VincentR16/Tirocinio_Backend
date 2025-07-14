@@ -139,7 +139,7 @@ export class AuthService {
 
   async refreshTokens(
     req: AuthenticatedRequest,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string }> {
     //Trova tutte la sessione per quello specifico dispositivo
     const session = await this.sessionRepository.findOne({
       where: {
@@ -166,17 +166,14 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token expired');
     }
 
-    //creo i token
-    const { refreshTokenHash, accessToken, refreshToken } =
-      await this.createTokens(session.user);
+    //creo il token
+    const accessToken = this.jwtService.sign(session.user);
 
-    //salvo il refresh token nella sessione
-    session.refreshTokenHash = refreshTokenHash;
+    //salvo il nuovo token nella sessione
     await this.sessionRepository.save(session);
 
     return {
       accessToken,
-      refreshToken,
     };
   }
 

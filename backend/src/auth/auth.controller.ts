@@ -48,12 +48,17 @@ export class AuthController {
     @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken } =
-      await this.authservice.refreshTokens(req);
+    const { accessToken } = await this.authservice.refreshTokens(req);
 
     //set dei cookie
-    this.setAuthCookies(res, accessToken, refreshToken);
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 1000 * 60 * 15,
+    });
 
+    console.log('Token Refreshed');
     return { message: 'Token refreshed!' };
   }
   @UseGuards(JwtAuthGuard)
