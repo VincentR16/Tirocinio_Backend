@@ -140,21 +140,30 @@ export class AuthService {
   async refreshTokens(
     req: AuthenticatedRequest,
   ): Promise<{ accessToken: string }> {
+    //controllo e valido il refreshToken
+    const oldRefreshToken = req.cookies.refreshToken;
+    if (!oldRefreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+    //Estrae userid dal payload (utile perche non usando la guardia i campi di req non vengono implemtnati)
+    let payload: JwtPayload;
+    try {
+      payload = this.jwtService.verify(oldRefreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh Token');
+    }
+    const userId = payload.userId;
+
     //Trova tutte la sessione per quello specifico dispositivo
     const session = await this.sessionRepository.findOne({
       where: {
-        user: { id: req.user.userId },
+        user: { id: userId },
         deviceInfo: req.headers['user-agent'] || 'unknown',
       },
       relations: ['user'],
     });
     if (!session) throw new UnauthorizedException('Invalid session');
 
-    //controllo e valido il refreshToken
-    const oldRefreshToken = req.cookies.refreshToken;
-    if (!oldRefreshToken) {
-      throw new UnauthorizedException('Missing refresh token');
-    }
     const isValid = await bcrypt.compare(
       oldRefreshToken,
       session.refreshTokenHash,
@@ -165,11 +174,14 @@ export class AuthService {
     if (session.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token expired');
     }
-
-    //creo il token
-    const accessToken = this.jwtService.sign(session.user);
-
     //salvo il nuovo token nella sessione
+    const newPayload: JwtPayload = {
+      userId: session.user.id,
+      role: session.user.role,
+    };
+    //creo il token
+    const accessToken = this.jwtService.sign(newPayload);
+
     await this.sessionRepository.save(session);
 
     return {
@@ -184,7 +196,6 @@ export class AuthService {
   }> {
     const payload: JwtPayload = {
       userId: user.id,
-      email: user.email,
       role: user.role,
     };
     //Genera accessToken

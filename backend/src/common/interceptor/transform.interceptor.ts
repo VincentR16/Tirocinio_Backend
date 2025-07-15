@@ -1,4 +1,3 @@
-//converte ciò che viene resituito dai controller in oggetti json
 import {
   NestInterceptor,
   ExecutionContext,

@@ -4,7 +4,7 @@ import { SignUpDto } from './dto/signUp.dto';
 import { Request, Response } from 'express';
 import { LogInDto } from './dto/logIn.dto';
 import { AuthenticatedRequest } from 'src/common/types/authRequest';
-import { JwtAuthGuard } from './jwt/jwt.guard';
+import { JwtAuthGuard } from '../common/guards/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -42,7 +42,6 @@ export class AuthController {
     return { message: 'SignUp success' };
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('refresh')
   async refreshTokens(
     @Req() req: AuthenticatedRequest,
@@ -58,7 +57,6 @@ export class AuthController {
       maxAge: 1000 * 60 * 15,
     });
 
-    console.log('Token Refreshed');
     return { message: 'Token refreshed!' };
   }
   @UseGuards(JwtAuthGuard)
@@ -66,7 +64,7 @@ export class AuthController {
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    return { message: 'Logout success' };
+    return { message: 'Refresh success' };
   }
 
   private setAuthCookies(
