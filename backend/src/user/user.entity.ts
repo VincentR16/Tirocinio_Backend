@@ -25,6 +25,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  @Column({ nullable: true })
+  location: string;
+
   @Column({ type: 'date', nullable: true })
   birthDate: Date;
 
@@ -40,6 +43,9 @@ export class User {
   @Column()
   @Exclude()
   password: string;
+
+  @Column({ nullable: true })
+  twoFactorAuthenticationSecret: string;
 
   @Exclude()
   @OneToMany(() => Session, (session) => session.user, {

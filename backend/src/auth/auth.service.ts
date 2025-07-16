@@ -18,7 +18,11 @@ import { AuthenticatedRequest } from 'src/common/types/authRequest';
 import { UserRoles } from 'src/common/types/userRoles';
 import { Patient } from 'src/patient/patient.entity';
 import { Doctor } from 'src/doctor/doctor.entity';
-
+import { authenticator } from 'otplib';
+import { UserService } from 'src/user/user.service';
+import { toDataURL } from 'qrcode';
+//todo dividere il login dal 2fa perche cosi facendo si puo controllare se email e password sono corrette senza dover per forza mettere anche il codice 2fa
+//todo fare che accesstoken e refresh token vengano inviati e dati solo quando il codice è corretto!!
 @Injectable()
 export class AuthService {
   constructor(
@@ -34,6 +38,8 @@ export class AuthService {
     @InjectRepository(Doctor)
     private readonly doctorRepository: Repository<Doctor>,
 
+    private readonly userService: UserService,
+
     private readonly jwtService: JwtService,
   ) {}
 
@@ -41,7 +47,7 @@ export class AuthService {
     dto: LogInDto,
     req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { email, password } = dto;
+    const { email, password, twoFactorAuthenticationCode } = dto;
 
     const user = await this.userRepository.findOne({
       where: { email },
@@ -51,6 +57,12 @@ export class AuthService {
 
     if (!(await bcrypt.compare(password, user.password)))
       throw new UnauthorizedException('Invalid credentials');
+
+    const isCodeValid = this.isTwoFactorAuthenticationCodeValid(
+      twoFactorAuthenticationCode,
+      user,
+    );
+    if (!isCodeValid) new UnauthorizedException('2FA code Not Valid!');
 
     //creo accessToken e refreshToken hashato
     const { refreshTokenHash, accessToken, refreshToken } =
@@ -208,5 +220,33 @@ export class AuthService {
     const refreshTokenHash = await bcrypt.hash(refreshToken, salt);
 
     return { accessToken, refreshTokenHash, refreshToken };
+  }
+
+  //generate the secret and the optAuthUrl
+  async generateTwoAuthenticationSecret(user: User) {
+    const secret = authenticator.generateSecret();
+
+    const optAuthUrl = authenticator.keyuri(user.email, 'MedTrust', secret);
+
+    await this.userService.setTwoFactorAuthenticationSecret(secret, user.id);
+
+    return {
+      secret,
+      optAuthUrl,
+    };
+  }
+
+  async generateQrCodeDataUrl(optAuthUrl: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await toDataURL(optAuthUrl);
+  }
+  isTwoFactorAuthenticationCodeValid(
+    twoFactorAuthenticationCode: string,
+    user: User,
+  ) {
+    return authenticator.verify({
+      token: twoFactorAuthenticationCode,
+      secret: user.twoFactorAuthenticationSecret,
+    });
   }
 }

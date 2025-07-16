@@ -2,16 +2,13 @@ import { Type } from 'class-transformer';
 import {
   IsDate,
   IsEmail,
-  IsEnum,
   IsIn,
   IsNotEmpty,
   IsPhoneNumber,
   IsString,
-  IsStrongPassword,
 } from 'class-validator';
-import { UserRoles } from 'src/common/types/userRoles';
 
-export class SignUpDto {
+export class UpdateProfileDto {
   @IsNotEmpty()
   @IsString()
   name: string;
@@ -40,14 +37,6 @@ export class SignUpDto {
   @IsNotEmpty()
   @IsString()
   location: string;
-
-  @IsNotEmpty()
-  @IsEnum(UserRoles)
-  role: UserRoles;
-
-  @IsNotEmpty()
-  @IsStrongPassword()
-  password: string;
 
   @IsString()
   ssn: string;

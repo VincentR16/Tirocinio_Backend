@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LogInDto {
   @IsNotEmpty()
@@ -6,5 +6,11 @@ export class LogInDto {
   email: string;
 
   @IsNotEmpty()
+  @IsString()
   password: string;
+
+  //todo fare un dto apparte con user e questa stringa
+  @IsNotEmpty()
+  @IsString()
+  twoFactorAuthenticationCode: string;
 }
