@@ -21,8 +21,8 @@ import { Doctor } from 'src/doctor/doctor.entity';
 import { authenticator } from 'otplib';
 import { UserService } from 'src/user/user.service';
 import { toDataURL } from 'qrcode';
-//todo dividere il login dal 2fa perche cosi facendo si puo controllare se email e password sono corrette senza dover per forza mettere anche il codice 2fa
-//todo fare che accesstoken e refresh token vengano inviati e dati solo quando il codice è corretto!!
+import { twoFactorAuthenticationDto } from './dto/2FA.dto';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -43,11 +43,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async logIn(
-    dto: LogInDto,
-    req: Request,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { email, password, twoFactorAuthenticationCode } = dto;
+  async logIn(dto: LogInDto): Promise<User> {
+    const { email, password } = dto;
 
     const user = await this.userRepository.findOne({
       where: { email },
@@ -58,43 +55,10 @@ export class AuthService {
     if (!(await bcrypt.compare(password, user.password)))
       throw new UnauthorizedException('Invalid credentials');
 
-    const isCodeValid = this.isTwoFactorAuthenticationCodeValid(
-      twoFactorAuthenticationCode,
-      user,
-    );
-    if (!isCodeValid) new UnauthorizedException('2FA code Not Valid!');
-
-    //creo accessToken e refreshToken hashato
-    const { refreshTokenHash, accessToken, refreshToken } =
-      await this.createTokens(user);
-
-    //elimino vecchia sessione per quel dispositivo
-    await this.sessionRepository.delete({
-      user: { id: user.id },
-      deviceInfo: req.headers['user-agent'] || 'unknown',
-    });
-
-    // Salva sessione nel DB
-    const session = this.sessionRepository.create({
-      refreshTokenHash: refreshTokenHash,
-      deviceInfo: req.headers['user-agent'] || 'unknown',
-      ipAddress: req.ip,
-      expiresAt: dayjs().add(7, 'days').toDate(),
-      user: user,
-    });
-
-    await this.sessionRepository.save(session);
-
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return user;
   }
 
-  async signUp(
-    dto: SignUpDto,
-    req: Request,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async signUp(dto: SignUpDto): Promise<string> {
     const { ssn, ospidal, role, password, email, phone } = dto;
 
     const existingUser = await this.userRepository.findOne({
@@ -114,19 +78,6 @@ export class AuthService {
     });
     await this.userRepository.save(user);
 
-    const { refreshTokenHash, accessToken, refreshToken } =
-      await this.createTokens(user);
-
-    //Salva sessione
-    const session = this.sessionRepository.create({
-      user,
-      refreshTokenHash: refreshTokenHash,
-      deviceInfo: req.headers['user-agent'] || 'unknown',
-      ipAddress: req.ip,
-      expiresAt: dayjs().add(7, 'days').toDate(),
-    });
-    await this.sessionRepository.save(session);
-
     //creo la classe patient o la classe doctor a seconda di quale sia il ruolo
     if (role === UserRoles.PATIENT) {
       const patient = this.patientRepository.create({
@@ -142,11 +93,7 @@ export class AuthService {
       await this.doctorRepository.save(doctor);
     }
 
-    //Ritorna i token
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return this.generateTwoAuthenticationSecret(user);
   }
 
   async refreshTokens(
@@ -223,30 +170,59 @@ export class AuthService {
   }
 
   //generate the secret and the optAuthUrl
-  async generateTwoAuthenticationSecret(user: User) {
+  async generateTwoAuthenticationSecret(user: User): Promise<string> {
     const secret = authenticator.generateSecret();
 
     const optAuthUrl = authenticator.keyuri(user.email, 'MedTrust', secret);
 
     await this.userService.setTwoFactorAuthenticationSecret(secret, user.id);
 
-    return {
-      secret,
-      optAuthUrl,
-    };
+    return this.generateQrCodeDataUrl(optAuthUrl);
   }
 
-  async generateQrCodeDataUrl(optAuthUrl: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return await toDataURL(optAuthUrl);
+  async generateQrCodeDataUrl(optAuthUrl: string): Promise<string> {
+    const url = (await toDataURL(optAuthUrl)) as string;
+    return url;
   }
-  isTwoFactorAuthenticationCodeValid(
-    twoFactorAuthenticationCode: string,
-    user: User,
-  ) {
-    return authenticator.verify({
+
+  async isTwoFactorAuthenticationCodeValid(
+    dto: twoFactorAuthenticationDto,
+    req: Request,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const { user, twoFactorAuthenticationCode } = dto;
+
+    //validate the 2fa code
+    const isCodeValid = authenticator.verify({
       token: twoFactorAuthenticationCode,
       secret: user.twoFactorAuthenticationSecret,
     });
+
+    if (!isCodeValid) new UnauthorizedException('2FA code Not Valid!');
+
+    //creo accessToken e refreshToken hashato
+    const { refreshTokenHash, accessToken, refreshToken } =
+      await this.createTokens(user);
+
+    //elimino vecchia sessione per quel dispositivo
+    await this.sessionRepository.delete({
+      user: { id: user.id },
+      deviceInfo: req.headers['user-agent'] || 'unknown',
+    });
+
+    // Salva sessione nel DB
+    const session = this.sessionRepository.create({
+      refreshTokenHash: refreshTokenHash,
+      deviceInfo: req.headers['user-agent'] || 'unknown',
+      ipAddress: req.ip,
+      expiresAt: dayjs().add(7, 'days').toDate(),
+      user: user,
+    });
+
+    await this.sessionRepository.save(session);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 }

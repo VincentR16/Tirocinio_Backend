@@ -50,13 +50,20 @@ export class User {
   @Exclude()
   @OneToMany(() => Session, (session) => session.user, {
     nullable: true,
+    onDelete: 'CASCADE',
     eager: true,
   })
   session: Session[];
 
-  @OneToOne(() => Patient, (patient) => patient.user, { eager: true })
+  @OneToOne(() => Patient, (patient) => patient.user, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   patient?: Patient;
 
-  @OneToOne(() => Doctor, (doctor) => doctor.user, { eager: true })
+  @OneToOne(() => Doctor, (doctor) => doctor.user, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   doctor?: Doctor;
 }

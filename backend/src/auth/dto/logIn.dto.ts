@@ -8,9 +8,4 @@ export class LogInDto {
   @IsNotEmpty()
   @IsString()
   password: string;
-
-  //todo fare un dto apparte con user e questa stringa
-  @IsNotEmpty()
-  @IsString()
-  twoFactorAuthenticationCode: string;
 }

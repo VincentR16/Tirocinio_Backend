@@ -5,41 +5,45 @@ import { Request, Response } from 'express';
 import { LogInDto } from './dto/logIn.dto';
 import { AuthenticatedRequest } from 'src/common/types/authRequest';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
+import { twoFactorAuthenticationDto } from './dto/2FA.dto';
+import { User } from 'src/user/user.entity';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authservice: AuthService) {}
 
   @Post('/login')
-  async login(
-    @Body() credential: LogInDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const { accessToken, refreshToken } = await this.authservice.logIn(
-      credential,
-      req,
-    );
-    //set dei cookie
-    this.setAuthCookies(res, accessToken, refreshToken);
-
-    return { message: 'Login success' };
+  login(@Body() credential: LogInDto): Promise<User> {
+    return this.authservice.logIn(credential);
   }
 
   @Post('/signup')
-  async signUp(
-    @Body() credential: SignUpDto,
+  async signUp(@Body() credential: SignUpDto) {
+    await this.authservice.signUp(credential);
+
+    return { message: 'SignUp success' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return { message: 'Refresh success' };
+  }
+
+  @Post('/2FA')
+  async twoFactorAuthentication(
+    @Body() dto: twoFactorAuthenticationDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken } = await this.authservice.signUp(
-      credential,
-      req,
-    );
-    //set dei cookie
+    const { accessToken, refreshToken } =
+      await this.authservice.isTwoFactorAuthenticationCodeValid(dto, req);
+
     this.setAuthCookies(res, accessToken, refreshToken);
 
-    return { message: 'SignUp success' };
+    return { message: 'Login success' };
   }
 
   @Post('refresh')
@@ -58,13 +62,6 @@ export class AuthController {
     });
 
     return { message: 'Token refreshed!' };
-  }
-  @UseGuards(JwtAuthGuard)
-  @Post('/logout')
-  logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return { message: 'Refresh success' };
   }
 
   private setAuthCookies(
