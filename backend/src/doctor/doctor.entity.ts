@@ -11,7 +11,7 @@ export class Doctor {
 
   @OneToOne(() => User, (user) => user.doctor, {
     nullable: false,
-    cascade: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'userId' })
   user: User;

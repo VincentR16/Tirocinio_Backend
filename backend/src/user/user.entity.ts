@@ -25,16 +25,16 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ nullable: true })
+  @Column({})
   location: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'date' })
   birthDate: Date;
 
-  @Column({ nullable: true })
+  @Column({})
   gender: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ unique: true })
   phone: string;
 
   @Column({ type: 'enum', enum: UserRoles })
@@ -44,7 +44,7 @@ export class User {
   @Exclude()
   password: string;
 
-  @Column({ nullable: true })
+  @Column({})
   twoFactorAuthenticationSecret: string;
 
   @Exclude()
@@ -57,12 +57,14 @@ export class User {
 
   @OneToOne(() => Patient, (patient) => patient.user, {
     eager: true,
+    nullable: true,
     onDelete: 'CASCADE',
   })
   patient?: Patient;
 
   @OneToOne(() => Doctor, (doctor) => doctor.user, {
     eager: true,
+    nullable: true,
     onDelete: 'CASCADE',
   })
   doctor?: Doctor;

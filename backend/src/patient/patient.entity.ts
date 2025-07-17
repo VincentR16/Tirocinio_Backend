@@ -10,7 +10,7 @@ export class Patient {
 
   @OneToOne(() => User, (user) => user.patient, {
     nullable: false,
-    cascade: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'userId' })
   user: User;
