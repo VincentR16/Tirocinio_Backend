@@ -19,7 +19,6 @@ import { UserRoles } from 'src/common/types/userRoles';
 import { Patient } from 'src/patient/patient.entity';
 import { Doctor } from 'src/doctor/doctor.entity';
 import { authenticator } from 'otplib';
-import { UserService } from 'src/user/user.service';
 import { toDataURL } from 'qrcode';
 import { twoFactorAuthenticationDto } from './dto/2FA.dto';
 
@@ -38,8 +37,6 @@ export class AuthService {
     @InjectRepository(Doctor)
     private readonly doctorRepository: Repository<Doctor>,
 
-    private readonly userService: UserService,
-
     private readonly jwtService: JwtService,
   ) {}
 
@@ -49,7 +46,6 @@ export class AuthService {
     const user = await this.userRepository.findOne({
       where: { email },
     });
-
     if (!user) throw new UnauthorizedException('Invalid Email');
 
     if (!(await bcrypt.compare(password, user.password)))
@@ -58,7 +54,7 @@ export class AuthService {
     return user;
   }
 
-  async signUp(dto: SignUpDto): Promise<string> {
+  async signUp(dto: SignUpDto): Promise<{ qrCodeUrl: string; user: User }> {
     const { ssn, ospidal, role, password, email, phone } = dto;
 
     const existingUser = await this.userRepository.findOne({
@@ -71,9 +67,12 @@ export class AuthService {
     const salt = await bcrypt.genSalt();
     //hash sulla password
     const hashedPassword = await bcrypt.hash(password, salt);
+    //creo chiave segreta per 2FA
+    const secret = authenticator.generateSecret();
 
     const user = this.userRepository.create({
       ...dto,
+      twoFactorAuthenticationSecret: secret,
       password: hashedPassword,
     });
     await this.userRepository.save(user);
@@ -92,8 +91,20 @@ export class AuthService {
       });
       await this.doctorRepository.save(doctor);
     }
+    const qrCodeUrl = await this.generateQrCodeDataUrl(email, secret);
+    if (!qrCodeUrl) throw new Error('is not possible to generate the url');
 
-    return this.generateTwoAuthenticationSecret(user);
+    return { qrCodeUrl, user };
+  }
+
+  async logout(req: Request) {
+    const user = req.user as User;
+    const deviceInfo = req.headers['user-agent'] ?? 'unknown';
+
+    await this.sessionRepository.delete({
+      user: { id: user.id },
+      deviceInfo,
+    });
   }
 
   async refreshTokens(
@@ -148,48 +159,21 @@ export class AuthService {
     };
   }
 
-  private async createTokens(user: User): Promise<{
-    accessToken: string;
-    refreshTokenHash: string;
-    refreshToken: string;
-  }> {
-    const payload: JwtPayload = {
-      userId: user.id,
-      role: user.role,
-    };
-    //Genera accessToken
-    const accessToken = this.jwtService.sign(payload);
-    //Genera refreshToken
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-
-    //genera chiave di sale
-    const salt = await bcrypt.genSalt();
-    const refreshTokenHash = await bcrypt.hash(refreshToken, salt);
-
-    return { accessToken, refreshTokenHash, refreshToken };
-  }
-
-  //generate the secret and the optAuthUrl
-  async generateTwoAuthenticationSecret(user: User): Promise<string> {
-    const secret = authenticator.generateSecret();
-
-    const optAuthUrl = authenticator.keyuri(user.email, 'MedTrust', secret);
-
-    await this.userService.setTwoFactorAuthenticationSecret(secret, user.id);
-
-    return this.generateQrCodeDataUrl(optAuthUrl);
-  }
-
-  async generateQrCodeDataUrl(optAuthUrl: string): Promise<string> {
-    const url = (await toDataURL(optAuthUrl)) as string;
-    return url;
+  async generateQrCodeDataUrl(email: string, secret: string): Promise<string> {
+    const optAuthUrl = authenticator.keyuri(email, 'MedTrust', secret);
+    return await toDataURL(optAuthUrl);
   }
 
   async isTwoFactorAuthenticationCodeValid(
     dto: twoFactorAuthenticationDto,
     req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { user, twoFactorAuthenticationCode } = dto;
+    const { userId, twoFactorAuthenticationCode } = dto;
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (!user) throw new UnauthorizedException('Invalid UserId');
 
     //validate the 2fa code
     const isCodeValid = authenticator.verify({
@@ -197,7 +181,7 @@ export class AuthService {
       secret: user.twoFactorAuthenticationSecret,
     });
 
-    if (!isCodeValid) new UnauthorizedException('2FA code Not Valid!');
+    if (!isCodeValid) throw new UnauthorizedException('2FA code Not Valid!');
 
     //creo accessToken e refreshToken hashato
     const { refreshTokenHash, accessToken, refreshToken } =
@@ -224,5 +208,26 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  private async createTokens(user: User): Promise<{
+    accessToken: string;
+    refreshTokenHash: string;
+    refreshToken: string;
+  }> {
+    const payload: JwtPayload = {
+      userId: user.id,
+      role: user.role,
+    };
+    //Genera accessToken
+    const accessToken = this.jwtService.sign(payload);
+    //Genera refreshToken
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    //genera chiave di sale
+    const salt = await bcrypt.genSalt();
+    const refreshTokenHash = await bcrypt.hash(refreshToken, salt);
+
+    return { accessToken, refreshTokenHash, refreshToken };
   }
 }

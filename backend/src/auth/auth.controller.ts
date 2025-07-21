@@ -18,18 +18,20 @@ export class AuthController {
   }
 
   @Post('/signup')
-  async signUp(@Body() credential: SignUpDto) {
-    await this.authservice.signUp(credential);
-
-    return { message: 'SignUp success' };
+  async signUp(
+    @Body() credential: SignUpDto,
+  ): Promise<{ qrCodeUrl: string; user: User }> {
+    return await this.authservice.signUp(credential);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('/logout')
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.authservice.logout(req);
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    return { message: 'Refresh success' };
+
+    return { message: 'Logout success' };
   }
 
   @Post('/2FA')

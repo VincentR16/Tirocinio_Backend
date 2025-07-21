@@ -41,15 +41,4 @@ export class UserService {
     }
     return await this.userRepository.delete({ id: userId });
   }
-
-  async setTwoFactorAuthenticationSecret(secret: string, id: string) {
-    const user = await this.userRepository.findOne({
-      where: [{ id: id }],
-    });
-
-    if (!user) throw new BadRequestException('user not found');
-
-    user.twoFactorAuthenticationSecret = secret;
-    await this.userRepository.save(user);
-  }
 }

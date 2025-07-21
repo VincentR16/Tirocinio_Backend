@@ -1,12 +1,9 @@
-import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
-import { User } from 'src/user/user.entity';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class twoFactorAuthenticationDto {
+  @IsUUID()
   @IsNotEmpty()
-  @ValidateNested()
-  @Type(() => User)
-  user: User;
+  userId: string;
 
   @IsNotEmpty()
   @IsString()
