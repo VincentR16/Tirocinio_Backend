@@ -30,7 +30,6 @@ export class AuthService {
 
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
-
     @InjectRepository(Patient)
     private readonly patientRepository: Repository<Patient>,
 
@@ -101,10 +100,15 @@ export class AuthService {
     const user = req.user as User;
     const deviceInfo = req.headers['user-agent'] ?? 'unknown';
 
-    await this.sessionRepository.delete({
-      user: { id: user.id },
-      deviceInfo,
+    const sessions = await this.sessionRepository.find({
+      where: {
+        user: { id: user.id },
+        deviceInfo,
+      },
+      relations: ['user'],
     });
+
+    await this.sessionRepository.remove(sessions); // elimina tutti
   }
 
   async refreshTokens(
