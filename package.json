@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@types/fhir": "^0.0.41",
     "cookie-parser": "^1.4.7"
   }
 }

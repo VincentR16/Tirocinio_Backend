@@ -1,5 +1,14 @@
+import { Exclude } from 'class-transformer';
+import { EHR } from 'src/ehr/ehr.entity';
 import { User } from 'src/user/user.entity';
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+  PrimaryColumn,
+} from 'typeorm';
 
 @Entity()
 export class Doctor {
@@ -15,4 +24,10 @@ export class Doctor {
   })
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Exclude()
+  @OneToMany(() => EHR, (ehr) => ehr.createdBy, {
+    nullable: true,
+  })
+  ehr: EHR[];
 }
