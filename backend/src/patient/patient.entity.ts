@@ -11,7 +11,7 @@ import {
 
 @Entity()
 export class Patient {
-  @PrimaryColumn()
+  @PrimaryColumn('uuid')
   userId: string;
   @Column()
   ssn: string;
@@ -25,7 +25,6 @@ export class Patient {
 
   @OneToMany(() => EHR, (ehr) => ehr.patient, {
     nullable: true,
-    eager: true,
   })
   ehr: EHR[];
 }

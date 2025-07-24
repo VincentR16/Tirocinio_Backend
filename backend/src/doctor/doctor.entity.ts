@@ -12,7 +12,7 @@ import {
 
 @Entity()
 export class Doctor {
-  @PrimaryColumn()
+  @PrimaryColumn('uuid')
   userId: string;
 
   @Column()
