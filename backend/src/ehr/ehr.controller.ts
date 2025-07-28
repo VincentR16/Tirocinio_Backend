@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { EHRService } from './ehr.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
-import { EhrDTO } from './dto/EHR.dto';
+import { EhrDTO } from './dto/ehr.dto';
 import { UserId } from 'src/common/decoretor/user-id.decoretor';
 import { RolesGuard } from 'src/common/guards/role.guard';
 import { UserRoles } from 'src/common/types/userRoles';
@@ -58,5 +58,10 @@ export class EHRController {
   ) {
     await this.ehrService.patchEhr(userId, ehrId, dto);
     return { message: ' EHR updated' };
+  }
+
+  @Get(':id/pdf')
+  getPdf(@Param('id') ehrId: string, @UserId() userId: string) {
+    return this.ehrService.getPdf(ehrId, userId);
   }
 }

@@ -1,6 +1,10 @@
 {
   "dependencies": {
     "@types/fhir": "^0.0.41",
-    "cookie-parser": "^1.4.7"
+    "cookie-parser": "^1.4.7",
+    "pdfkit": "^0.17.1"
+  },
+  "devDependencies": {
+    "@types/pdfkit": "^0.17.2"
   }
 }

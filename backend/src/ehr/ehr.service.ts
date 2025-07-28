@@ -1,10 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { EhrDTO } from './dto/EHR.dto';
+import { EhrDTO } from './dto/ehr.dto';
+import PDFDocument from 'pdfkit';
 import { Bundle, FhirResource } from 'fhir/r4';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EHR } from './ehr.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/user/user.entity';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class EHRService {
@@ -120,7 +122,7 @@ export class EHRService {
           }
 
           return {
-            fullUrl: `${type}/${res.id ?? '1'}`,
+            fullUrl: `${type}/${res.id ?? randomUUID()}`,
             resource,
           };
         }),
@@ -133,5 +135,102 @@ export class EHRService {
     };
 
     return bundle;
+  }
+
+  async getPdf(ehrId: string, userId: string): Promise<Buffer> {
+    const result = await this.ehrRepository.findOne({
+      where: { id: ehrId, createdBy: { userId } },
+      relations: ['doctor'],
+    });
+    if (!result) throw new BadRequestException('No EHR found');
+
+    const bundle = result.data;
+
+    const doc = new PDFDocument();
+    const chunks: Buffer[] = [];
+
+    doc.on('data', (chunk) => chunks.push(chunk));
+    const endPromise = new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+
+    // === Titolo ===
+    doc.fontSize(18).text('Electronic Health Record', { align: 'center' });
+    doc.moveDown();
+
+    // === Paziente ===
+    const patient = bundle.entry.find(
+      (e) => e.resource?.resourceType === 'Patient',
+    )?.resource as any;
+    doc
+      .fontSize(12)
+      .text(
+        `Patient: ${patient?.name?.[0]?.given?.join(' ')} ${patient?.name?.[0]?.family}`,
+      );
+    doc.text(`ID: ${patient?.id}`);
+    doc.moveDown();
+
+    // === Sezioni dinamiche ===
+    const printSection = (
+      title: string,
+      resources: any[],
+      render: (res: any) => string,
+    ) => {
+      if (!resources.length) return;
+
+      doc.fontSize(14).text(title, { underline: true });
+      resources.forEach((res, i) => {
+        doc.fontSize(11).text(`${i + 1}. ${render(res)}`, { indent: 10 });
+      });
+      doc.moveDown();
+    };
+
+    const filterByType = (type: string) =>
+      bundle.entry
+        .filter((e) => e.resource?.resourceType === type)
+        .map((e) => e.resource);
+
+    printSection(
+      'Observations',
+      filterByType('Observation'),
+      (obs) =>
+        `${obs.code?.text ?? '??'} — ${obs.valueQuantity?.value ?? '?'} ${obs.valueQuantity?.unit ?? ''}`,
+    );
+
+    printSection(
+      'Conditions',
+      filterByType('Condition'),
+      (c) => `${c.code?.text ?? '??'} — ${c.clinicalStatus?.text ?? ''}`,
+    );
+
+    printSection(
+      'Allergies',
+      filterByType('AllergyIntolerance'),
+      (a) => `${a.code?.text ?? '??'} (${a.clinicalStatus?.text ?? ''})`,
+    );
+
+    printSection(
+      'Procedures',
+      filterByType('Procedure'),
+      (p) =>
+        `${p.code?.text ?? '??'} on ${p.performedDateTime ?? p.performedPeriod?.start ?? ''}`,
+    );
+
+    printSection(
+      'Encounters',
+      filterByType('Encounter'),
+      (e) =>
+        `${e.class?.code ?? '??'}: ${e.period?.start ?? ''} → ${e.period?.end ?? ''}`,
+    );
+
+    printSection(
+      'Medications',
+      filterByType('MedicationStatement'),
+      (m) =>
+        `${m.medicationCodeableConcept?.text ?? '??'} — ${m.dosage?.[0]?.text ?? ''}`,
+    );
+
+    doc.end();
+    return await endPromise;
   }
 }
