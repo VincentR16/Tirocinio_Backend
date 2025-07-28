@@ -1,3 +1,4 @@
+import { Bundle } from 'fhir/r4';
 import { Doctor } from 'src/doctor/doctor.entity';
 import { Patient } from 'src/patient/patient.entity';
 import {
@@ -14,7 +15,7 @@ export class EHR {
   id: string;
 
   @Column({ type: 'jsonb' })
-  data: any;
+  data: Bundle;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

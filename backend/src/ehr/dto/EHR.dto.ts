@@ -11,7 +11,7 @@ import {
 import { Type } from 'class-transformer';
 import { ValidateNested, IsOptional } from 'class-validator';
 
-export class CreateEhrDTO {
+export class EhrDTO {
   @ValidateNested()
   @Type(() => Object)
   patient: Patient;

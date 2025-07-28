@@ -13,6 +13,7 @@ import {
 export class Patient {
   @PrimaryColumn('uuid')
   userId: string;
+
   @Column()
   ssn: string;
 
