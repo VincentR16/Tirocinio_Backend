@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { EHRService } from './ehr.service';
@@ -15,6 +16,7 @@ import { UserId } from 'src/common/decoretor/user-id.decoretor';
 import { RolesGuard } from 'src/common/guards/role.guard';
 import { UserRoles } from 'src/common/types/userRoles';
 import { Roles } from 'src/common/decoretor/user-role.decoretor';
+import { Response } from 'express';
 import { EHR } from './ehr.entity';
 
 @Controller('EHR')
@@ -30,13 +32,13 @@ export class EHRController {
     return { message: 'EHR creation success' };
   }
 
-  @Get('Doctor')
+  @Get('doctor')
   @Roles(UserRoles.DOCTOR)
   getEhrDoctor(@UserId() userId: string): Promise<EHR[]> {
     return this.ehrService.getEhrDoctor(userId);
   }
 
-  @Get('Patient')
+  @Get('patient')
   @Roles(UserRoles.PATIENT)
   getEhrPatient(@UserId() userId: string): Promise<EHR[]> {
     return this.ehrService.getEhrPatient(userId);
@@ -61,7 +63,18 @@ export class EHRController {
   }
 
   @Get(':id/pdf')
-  getPdf(@Param('id') ehrId: string, @UserId() userId: string) {
-    return this.ehrService.getPdf(ehrId, userId);
+  async getPdf(
+    @Param('id') ehrId: string,
+    @UserId() userId: string,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.ehrService.getPdf(ehrId, userId);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="ehr-${ehrId}.pdf"`,
+    );
+    res.send(pdfBuffer);
   }
 }

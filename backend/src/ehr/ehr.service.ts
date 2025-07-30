@@ -1,7 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { EhrDTO } from './dto/ehr.dto';
 import PDFDocument from 'pdfkit';
-import { Bundle, FhirResource } from 'fhir/r4';
+import {
+  AllergyIntolerance,
+  Bundle,
+  Condition,
+  Encounter,
+  FhirResource,
+  MedicationStatement,
+  Observation,
+  Patient,
+  Procedure,
+} from 'fhir/r4';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EHR } from './ehr.entity';
 import { Repository } from 'typeorm';
@@ -144,33 +154,36 @@ export class EHRService {
     });
     if (!result) throw new BadRequestException('No EHR found');
 
-    const bundle = result.data;
+    const bundle: Bundle = result.data;
 
     const doc = new PDFDocument();
     const chunks: Buffer[] = [];
 
-    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
     const endPromise = new Promise<Buffer>((resolve) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
     });
 
-    // === Titolo ===
+    //  Titolo
     doc.fontSize(18).text('Electronic Health Record', { align: 'center' });
     doc.moveDown();
 
-    // === Paziente ===
+    // Paziente
+    if (!bundle.entry) throw new Error('Invalid bundle: no entries found');
+
     const patient = bundle.entry.find(
       (e) => e.resource?.resourceType === 'Patient',
-    )?.resource as any;
+    )?.resource as Patient;
+
     doc
       .fontSize(12)
       .text(
         `Patient: ${patient?.name?.[0]?.given?.join(' ')} ${patient?.name?.[0]?.family}`,
       );
-    doc.text(`ID: ${patient?.id}`);
+    doc.text(`SSN: ${patient?.id}`);
     doc.moveDown();
 
-    // === Sezioni dinamiche ===
+    //  Sezioni dinamiche
     const printSection = (
       title: string,
       resources: any[],
@@ -185,48 +198,56 @@ export class EHRService {
       doc.moveDown();
     };
 
-    const filterByType = (type: string) =>
-      bundle.entry
-        .filter((e) => e.resource?.resourceType === type)
+    const filterByType = <T extends FhirResource>(
+      bundle: Bundle,
+      type: string,
+    ): T[] => {
+      const entries = bundle.entry ?? [];
+
+      return entries
+        .filter((e): e is { resource: T } => e.resource?.resourceType === type)
         .map((e) => e.resource);
+    };
 
     printSection(
       'Observations',
-      filterByType('Observation'),
-      (obs) =>
+      filterByType<Observation>(bundle, 'Observation'),
+      (obs: Observation) =>
         `${obs.code?.text ?? '??'} — ${obs.valueQuantity?.value ?? '?'} ${obs.valueQuantity?.unit ?? ''}`,
     );
 
     printSection(
       'Conditions',
-      filterByType('Condition'),
-      (c) => `${c.code?.text ?? '??'} — ${c.clinicalStatus?.text ?? ''}`,
+      filterByType<Condition>(bundle, 'Condition'),
+      (c: Condition) =>
+        `${c.code?.text ?? '??'} — ${c.clinicalStatus?.text ?? ''}`,
     );
 
     printSection(
       'Allergies',
-      filterByType('AllergyIntolerance'),
-      (a) => `${a.code?.text ?? '??'} (${a.clinicalStatus?.text ?? ''})`,
+      filterByType<AllergyIntolerance>(bundle, 'AllergyIntolerance'),
+      (a: AllergyIntolerance) =>
+        `${a.code?.text ?? '??'} (${a.clinicalStatus?.text ?? ''})`,
     );
 
     printSection(
       'Procedures',
-      filterByType('Procedure'),
-      (p) =>
+      filterByType<Procedure>(bundle, 'Procedure'),
+      (p: Procedure) =>
         `${p.code?.text ?? '??'} on ${p.performedDateTime ?? p.performedPeriod?.start ?? ''}`,
     );
 
     printSection(
       'Encounters',
-      filterByType('Encounter'),
-      (e) =>
+      filterByType<Encounter>(bundle, 'Encounter'),
+      (e: Encounter) =>
         `${e.class?.code ?? '??'}: ${e.period?.start ?? ''} → ${e.period?.end ?? ''}`,
     );
 
     printSection(
       'Medications',
-      filterByType('MedicationStatement'),
-      (m) =>
+      filterByType<MedicationStatement>(bundle, 'MedicationStatement'),
+      (m: MedicationStatement) =>
         `${m.medicationCodeableConcept?.text ?? '??'} — ${m.dosage?.[0]?.text ?? ''}`,
     );
 

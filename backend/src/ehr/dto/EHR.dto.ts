@@ -20,6 +20,15 @@ export class EhrDTO {
   @Type(() => Object)
   @IsOptional()
   encounter?: Encounter;
+  @ValidateNested()
+  @Type(() => Object)
+  @IsOptional()
+  allergy?: AllergyIntolerance;
+
+  @ValidateNested()
+  @Type(() => Object)
+  @IsOptional()
+  observation?: Observation;
 
   @ValidateNested()
   @Type(() => Object)
@@ -35,14 +44,4 @@ export class EhrDTO {
   @Type(() => Object)
   @IsOptional()
   medicationStatement?: MedicationStatement;
-
-  @ValidateNested()
-  @Type(() => Object)
-  @IsOptional()
-  allergy?: AllergyIntolerance;
-
-  @ValidateNested()
-  @Type(() => Object)
-  @IsOptional()
-  observation?: Observation;
 }
