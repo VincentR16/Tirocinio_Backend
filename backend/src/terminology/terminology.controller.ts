@@ -16,20 +16,28 @@ export class TerminologyController {
   }
 
   @Get('observation')
-  getObservations(@Query() dto: TerminologyDto) {
+  getObservations(
+    @Query() dto: TerminologyDto,
+  ): Promise<TerminologyResponseDto[]> {
     return this.termService.getObservations(dto);
   }
 
   @Get('condition')
-  getConditions(@Query() dto: TerminologyDto) {
+  getConditions(
+    @Query() dto: TerminologyDto,
+  ): Promise<TerminologyResponseDto[]> {
     return this.termService.getConditions(dto);
   }
   @Get('procedure')
-  getProcedures(@Query() dto: TerminologyDto) {
+  getProcedures(
+    @Query() dto: TerminologyDto,
+  ): Promise<TerminologyResponseDto[]> {
     return this.termService.getProcedures(dto);
   }
   @Get('medication')
-  getMedications(@Query() dto: TerminologyDto) {
+  getMedications(
+    @Query() dto: TerminologyDto,
+  ): Promise<TerminologyResponseDto[]> {
     return this.termService.getMedications(dto);
   }
 }
