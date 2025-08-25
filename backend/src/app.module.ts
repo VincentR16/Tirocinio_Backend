@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { EHRModule } from './ehr/ehr.module';
+import { TermilogyModule } from './terminology/terminology.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { EHRModule } from './ehr/ehr.module';
     UserModule,
     AuthModule,
     EHRModule,
+    TermilogyModule,
   ],
   controllers: [],
   providers: [],
