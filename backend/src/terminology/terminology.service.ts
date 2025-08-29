@@ -81,8 +81,7 @@ export class TerminologyService {
         .slice(0, limit);
 
       return results;
-    } catch (error) {
-      console.error(`${type} ValueSet error:`, error);
+    } catch {
       throw new BadRequestException(config.fetchErrorMessage);
     }
   }
