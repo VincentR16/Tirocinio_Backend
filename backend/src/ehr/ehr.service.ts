@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { EhrDTO } from './dto/ehr.dto';
-import PDFDocument from 'pdfkit';
+/*import PDFDocument from 'pdfkit';
 import {
   AllergyIntolerance,
   Bundle,
@@ -9,41 +9,25 @@ import {
   FhirResource,
   MedicationStatement,
   Observation,
-  Patient,
+  Patient as PatientFhir,
   Procedure,
-} from 'fhir/r4';
+} from 'fhir/r4';*/
 import { InjectRepository } from '@nestjs/typeorm';
 import { EHR } from './ehr.entity';
 import { Repository } from 'typeorm';
-import { User } from 'src/user/user.entity';
-import { randomUUID } from 'crypto';
+import { Doctor } from 'src/doctor/doctor.entity';
+import { Patient } from 'src/patient/patient.entity';
 
 @Injectable()
 export class EHRService {
   constructor(
     @InjectRepository(EHR)
     private readonly ehrRepository: Repository<EHR>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @InjectRepository(Patient)
+    private readonly patientRepository: Repository<Patient>,
+    @InjectRepository(Doctor)
+    private readonly doctorRespository: Repository<Doctor>,
   ) {}
-
-  async create(dto: EhrDTO, userId: string) {
-    const user = await this.userRepository.findOne({
-      where: [{ id: userId }],
-      relations: ['doctor'],
-    });
-    if (!user) throw new BadRequestException('userId not valid');
-
-    const bundle = this.createEhrBundle(dto);
-
-    const ehr = this.ehrRepository.create({
-      createdBy: user.doctor,
-      data: bundle,
-    });
-
-    await this.ehrRepository.save(ehr);
-  }
-
   getEhrDoctor(userId: string): Promise<EHR[]> {
     return this.ehrRepository.find({
       where: {
@@ -53,108 +37,54 @@ export class EHRService {
     });
   }
 
-  getEhrPatient(userId: string): Promise<EHR[]> {
-    return this.ehrRepository.find({
+  async create(dto: EhrDTO, userId: string) {
+    // opzionale: collega chi crea
+    const doctor = await this.doctorRespository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'],
+    });
+    if (!doctor) throw new BadRequestException('Doctor non valid');
+
+    const patientRef = await this.patientRepository.findOne({
       where: {
-        patient: { userId },
+        user: { email: dto.patientEmail },
       },
-      relations: ['patient'],
-    });
-  }
-  async delete(userId: string, ehrId: string) {
-    const result = await this.ehrRepository.find({
-      where: { id: ehrId, createdBy: { userId } },
-      relations: ['doctor'],
-    });
-    if (!result)
-      throw new BadRequestException(
-        'EHR not foundor you are not the owner of this EHR',
-      );
-    await this.ehrRepository.delete(result);
-  }
-
-  async patchEhr(userId: string, ehrId: string, dto: EhrDTO) {
-    const ehr = await this.ehrRepository.findOne({
-      where: {
-        id: ehrId,
-        createdBy: { userId },
-      },
-      relations: ['createdBy'],
+      relations: ['user'],
     });
 
-    if (!ehr) {
-      throw new BadRequestException(
-        'EHR not found or you are not the owner of this EHR',
-      );
-    }
+    if (!patientRef) throw new BadRequestException('Paziente not valid');
 
-    const bundle = this.createEhrBundle(dto);
-
-    ehr.data = bundle;
+    const ehr = this.ehrRepository.create({
+      createdBy: doctor,
+      patientRef: patientRef,
+      patient: dto.patient,
+      encounter: dto.encounter,
+      allergies: dto.allergies ?? [],
+      observations: dto.observations ?? [],
+      procedure: dto.procedure,
+      medications: dto.medications ?? [],
+    });
 
     await this.ehrRepository.save(ehr);
   }
 
-  //in this code is created the ehr; in hl7 the ehr in just a set of info; in this case i set this info in a bundle(a fhir obj)
-  createEhrBundle(dto: EhrDTO): Bundle {
-    const ssn = dto.patient.id;
-    if (!ssn) {
-      throw new BadRequestException('Patient SSN is required as id');
-    }
-
-    dto.patient.id = ssn;
-    //set of the hl7 type for each field of the dto
-    const optionalResources = [
-      { type: 'Observation', resource: dto.observation },
-      { type: 'Condition', resource: dto.condition },
-      { type: 'Encounter', resource: dto.encounter },
-      { type: 'Procedure', resource: dto.procedure },
-      { type: 'AllergyIntolerance', resource: dto.allergy },
-      { type: 'MedicationStatement', resource: dto.medicationStatement },
-    ] as { type: string; resource: FhirResource | undefined }[];
-
-    //creation of a obj entries ; the entries obj is a subObj of bundle
-    const entries: Bundle['entry'] = [
-      {
-        fullUrl: `Patient/${ssn}`,
-        resource: dto.patient,
+  getEhrPatient(userId: string): Promise<EHR[]> {
+    return this.ehrRepository.find({
+      where: {
+        patientRef: { userId },
       },
-      ...optionalResources
-        .filter(
-          (r): r is { type: string; resource: FhirResource } => !!r.resource,
-        )
-        .map(({ type, resource }) => {
-          const res = resource as Record<string, any>;
-          if ('subject' in res) {
-            res.subject = { reference: `Patient/${ssn}` };
-          } else if ('patient' in res) {
-            res.patient = { reference: `Patient/${ssn}` };
-          }
-
-          return {
-            fullUrl: `${type}/${res.id ?? randomUUID()}`,
-            resource,
-          };
-        }),
-    ];
-    //creation of the effective bundle
-    const bundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'document',
-      entry: entries,
-    };
-
-    return bundle;
+      relations: ['patient'],
+    });
   }
 
-  async getPdf(ehrId: string, userId: string): Promise<Buffer> {
+  /*async getPdf(ehrId: string, userId: string): Promise<Buffer> {
     const result = await this.ehrRepository.findOne({
       where: { id: ehrId, createdBy: { userId } },
       relations: ['doctor'],
     });
     if (!result) throw new BadRequestException('No EHR found');
 
-    const bundle: Bundle = result.data;
+    const bundle = result.data;
 
     const doc = new PDFDocument();
     const chunks: Buffer[] = [];
@@ -173,7 +103,7 @@ export class EHRService {
 
     const patient = bundle.entry.find(
       (e) => e.resource?.resourceType === 'Patient',
-    )?.resource as Patient;
+    )?.resource as PatientFhir;
 
     doc
       .fontSize(12)
@@ -253,5 +183,5 @@ export class EHRService {
 
     doc.end();
     return await endPromise;
-  }
+  }*/
 }
