@@ -16,18 +16,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EHR } from './ehr.entity';
 import { Repository } from 'typeorm';
 import { Doctor } from 'src/doctor/doctor.entity';
-import { Patient } from 'src/patient/patient.entity';
 
 @Injectable()
 export class EHRService {
   constructor(
     @InjectRepository(EHR)
     private readonly ehrRepository: Repository<EHR>,
-    @InjectRepository(Patient)
-    private readonly patientRepository: Repository<Patient>,
     @InjectRepository(Doctor)
     private readonly doctorRespository: Repository<Doctor>,
   ) {}
+
   getEhrDoctor(userId: string): Promise<EHR[]> {
     return this.ehrRepository.find({
       where: {
@@ -45,18 +43,9 @@ export class EHRService {
     });
     if (!doctor) throw new BadRequestException('Doctor non valid');
 
-    const patientRef = await this.patientRepository.findOne({
-      where: {
-        user: { email: dto.patientEmail },
-      },
-      relations: ['user'],
-    });
-
-    if (!patientRef) throw new BadRequestException('Paziente not valid');
-
     const ehr = this.ehrRepository.create({
       createdBy: doctor,
-      patientRef: patientRef,
+      patientEmail: dto.patientEmail,
       patient: dto.patient,
       encounter: dto.encounter,
       allergies: dto.allergies ?? [],
@@ -68,13 +57,8 @@ export class EHRService {
     await this.ehrRepository.save(ehr);
   }
 
-  getEhrPatient(userId: string): Promise<EHR[]> {
-    return this.ehrRepository.find({
-      where: {
-        patientRef: { userId },
-      },
-      relations: ['patient'],
-    });
+  getEhrPatient(userId: string) {
+    return undefined;
   }
 
   /*async getPdf(ehrId: string, userId: string): Promise<Buffer> {

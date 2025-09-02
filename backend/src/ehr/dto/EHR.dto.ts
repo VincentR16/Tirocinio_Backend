@@ -9,7 +9,7 @@ import {
   MedicationRequest,
 } from 'fhir/r4';
 
-export class EhrDTO {
+export interface EhrDTO {
   patient: Patient;
   encounter: Encounter;
   condition: Condition;

@@ -8,7 +8,6 @@ import {
   Condition as FhirCondition,
 } from 'fhir/r4';
 import { Doctor } from 'src/doctor/doctor.entity';
-import { Patient as AppPatient } from 'src/patient/patient.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -56,10 +55,6 @@ export class EHR {
   })
   createdBy: Doctor;
 
-  // FK al paziente della tua app (NON il Patient FHIR)
-  @ManyToOne(() => AppPatient, (patient) => patient.ehr, {
-    nullable: true,
-    eager: true,
-  })
-  patientRef: AppPatient;
+  @Column()
+  patientEmail: string;
 }

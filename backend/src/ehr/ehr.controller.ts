@@ -9,28 +9,23 @@ import { Roles } from 'src/common/decoretor/user-role.decoretor';
 import { EHR } from './ehr.entity';
 
 @Controller('ehr')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class EHRController {
   constructor(private readonly ehrService: EHRService) {}
 
   @Post('create')
-  @Roles(UserRoles.DOCTOR)
   async createEHR(@Body() dto: EhrDTO, @UserId() userId: string) {
-    console.log('ok');
-    console.log('DTO ricevuto:', dto);
     await this.ehrService.create(dto, userId);
     return { message: 'EHR creation success' };
   }
 
   @Get('doctor')
-  @Roles(UserRoles.DOCTOR)
   getEhrDoctor(@UserId() userId: string): Promise<EHR[]> {
     return this.ehrService.getEhrDoctor(userId);
   }
 
   @Get('patient')
   @Roles(UserRoles.PATIENT)
-  getEhrPatient(@UserId() userId: string): Promise<EHR[]> {
+  getEhrPatient(@UserId() userId: string) {
     return this.ehrService.getEhrPatient(userId);
   }
   /*@Get(':id/pdf')
