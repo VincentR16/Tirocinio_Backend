@@ -16,6 +16,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EHR } from './ehr.entity';
 import { Repository } from 'typeorm';
 import { Doctor } from 'src/doctor/doctor.entity';
+import { EhrPaginationDto } from './dto/pagination.dto';
+import { PaginatedResponse } from 'src/common/types/paginationResponse';
 
 @Injectable()
 export class EHRService {
@@ -25,15 +27,6 @@ export class EHRService {
     @InjectRepository(Doctor)
     private readonly doctorRespository: Repository<Doctor>,
   ) {}
-
-  getEhrDoctor(userId: string): Promise<EHR[]> {
-    return this.ehrRepository.find({
-      where: {
-        createdBy: { userId },
-      },
-      relations: ['createdBy'],
-    });
-  }
 
   async create(dto: EhrDTO, userId: string) {
     // opzionale: collega chi crea
@@ -57,7 +50,47 @@ export class EHRService {
     await this.ehrRepository.save(ehr);
   }
 
-  getEhrPatient(userId: string) {
+  async getEhrDoctor(
+    userId: string,
+    paginationDto: EhrPaginationDto,
+  ): Promise<PaginatedResponse> {
+    const { page = 1, search } = paginationDto;
+    const limit = 5;
+
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.ehrRepository
+      .createQueryBuilder('ehr')
+      .leftJoin('ehr.createdBy', 'createdBy')
+      .where('createdBy.userId = :userId', { userId });
+
+    if (search) {
+      //todo
+    }
+    const [ehr, totalItems] = await queryBuilder
+      .orderBy('ehr.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return {
+      ehr,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        itemsPerPage: limit,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
+  }
+
+  getEhrPatient(userId: string, paginationdto: EhrPaginationDto) {
     return undefined;
   }
 
