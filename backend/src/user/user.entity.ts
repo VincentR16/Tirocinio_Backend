@@ -63,7 +63,6 @@ export class User {
   patient?: Patient;
 
   @OneToOne(() => Doctor, (doctor) => doctor.user, {
-    eager: true,
     nullable: true,
     onDelete: 'CASCADE',
   })

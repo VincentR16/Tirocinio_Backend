@@ -61,11 +61,14 @@ export class EHRService {
 
     const queryBuilder = this.ehrRepository
       .createQueryBuilder('ehr')
-      .leftJoin('ehr.createdBy', 'createdBy')
+      .leftJoinAndSelect('ehr.createdBy', 'createdBy')
+      .leftJoinAndSelect('createdBy.user', 'user')
       .where('createdBy.userId = :userId', { userId });
 
-    if (search) {
-      //todo
+    if (search?.trim().length) {
+      queryBuilder.andWhere('LOWER(ehr.patientEmail) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
     }
     const [ehr, totalItems] = await queryBuilder
       .orderBy('ehr.createdAt', 'DESC')
