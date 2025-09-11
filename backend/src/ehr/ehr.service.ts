@@ -43,6 +43,7 @@ export class EHRService {
       encounter: dto.encounter,
       allergies: dto.allergies ?? [],
       observations: dto.observations ?? [],
+      condition: dto.condition,
       procedure: dto.procedure,
       medications: dto.medications ?? [],
     });
@@ -66,9 +67,19 @@ export class EHRService {
       .where('createdBy.userId = :userId', { userId });
 
     if (search?.trim().length) {
-      queryBuilder.andWhere('LOWER(ehr.patientEmail) LIKE LOWER(:search)', {
-        search: `%${search}%`,
-      });
+      queryBuilder
+        .where('LOWER(ehr.patientEmail) LIKE LOWER(:search)', {
+          search: `%${search}%`,
+        })
+        .orWhere("ehr.patient->'name'->0->>'family' ILIKE :search", {
+          search: `%${search}%`,
+        })
+        .orWhere("ehr.patient->'name'->0->'given'->>0 ILIKE :search", {
+          search: `%${search}%`,
+        })
+        .orWhere('ehr.patient::text ILIKE :search', {
+          search: `%${search}%`,
+        });
     }
     const [ehr, totalItems] = await queryBuilder
       .orderBy('ehr.createdAt', 'DESC')
@@ -79,7 +90,6 @@ export class EHRService {
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
-
     return {
       ehr,
       pagination: {
