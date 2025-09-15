@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { EHRService } from './ehr.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { EhrDTO } from './dto/ehr.dto';
@@ -8,6 +17,7 @@ import { UserRoles } from 'src/common/types/userRoles';
 import { Roles } from 'src/common/decoretor/user-role.decoretor';
 import { EhrPaginationDto } from './dto/pagination.dto';
 import { PaginatedResponse } from 'src/common/types/paginationResponse';
+import { Response } from 'express';
 
 @Controller('ehr')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,7 +49,7 @@ export class EHRController {
     return this.ehrService.getEhrPatient(userId, paginationdto);
   }
 
-  /*@Get(':id/pdf')
+  @Get(':id/pdf')
   async getPdf(
     @Param('id') ehrId: string,
     @UserId() userId: string,
@@ -53,5 +63,5 @@ export class EHRController {
       `attachment; filename="ehr-${ehrId}.pdf"`,
     );
     res.send(pdfBuffer);
-  }*/
+  }
 }
