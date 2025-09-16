@@ -7,7 +7,6 @@ import { Repository } from 'typeorm';
 import { Doctor } from 'src/doctor/doctor.entity';
 import { EhrPaginationDto } from './dto/pagination.dto';
 import { PaginatedResponse } from 'src/common/types/paginationResponse';
-import { AllergyIntolerance, MedicationRequest, Observation } from 'fhir/r4';
 
 @Injectable()
 export class EHRService {

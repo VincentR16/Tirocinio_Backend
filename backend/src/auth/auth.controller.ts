@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/signUp.dto';
 import { Request, Response } from 'express';
@@ -7,6 +15,7 @@ import { AuthenticatedRequest } from 'src/common/types/authRequest';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { twoFactorAuthenticationDto } from './dto/2FA.dto';
 import { User } from 'src/user/user.entity';
+import { UserId } from 'src/common/decoretor/user-id.decoretor';
 
 @Controller('auth')
 export class AuthController {
@@ -46,6 +55,12 @@ export class AuthController {
     this.setAuthCookies(res, accessToken, refreshToken);
 
     return { message: 'Login success' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('QRcode')
+  async generateQrCode(@UserId() userId: string) {
+    return this.authservice.getQrCodeUrl(userId);
   }
 
   @Post('refresh')

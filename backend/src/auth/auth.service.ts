@@ -234,4 +234,17 @@ export class AuthService {
 
     return { accessToken, refreshTokenHash, refreshToken };
   }
+
+  async getQrCodeUrl(id: string) {
+    const result = await this.userRepository.findOne({
+      where: { id: id },
+    });
+
+    if (!result) throw new BadRequestException('No user found');
+
+    return this.generateQrCodeDataUrl(
+      result.email,
+      result.twoFactorAuthenticationSecret,
+    );
+  }
 }
