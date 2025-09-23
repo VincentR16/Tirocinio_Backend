@@ -1,4 +1,5 @@
 import { Exclude } from 'class-transformer';
+import { Comunication } from 'src/comunication/comunication.entity';
 import { EHR } from 'src/ehr/ehr.entity';
 import { User } from 'src/user/user.entity';
 import {
@@ -31,4 +32,10 @@ export class Doctor {
     nullable: true,
   })
   ehr: EHR[];
+
+  @Exclude()
+  @OneToMany(() => Comunication, (comunication) => comunication.doctor, {
+    nullable: true,
+  })
+  comunication: Comunication[];
 }

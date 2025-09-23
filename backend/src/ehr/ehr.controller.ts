@@ -64,9 +64,4 @@ export class EHRController {
     );
     res.send(pdfBuffer);
   }
-
-  @Post(':ehrId/send')
-  async send(@Param('ehrId') ehrId: string) {
-    return this.ehrService.sendToOspidal(ehrId);
-  }
 }
