@@ -54,12 +54,14 @@ export class ComiunicationService {
   ) {}
 
   async createComunication(
+    hospital: string,
     type: ComunicationType,
     status: ComunicationStatus,
     doctor: Doctor,
     message: Bundle | OperationOutcome,
   ) {
     const comunication = this.comunicationRepository.create({
+      hospital,
       type,
       status,
       doctor,
@@ -69,7 +71,7 @@ export class ComiunicationService {
     await this.comunicationRepository.save(comunication);
   }
 
-  async sendToOspidal(ehrId: string, doctorId: string) {
+  async sendToOspidal(ehrId: string, doctorId: string, hospital: string) {
     const ehr = await this.ehrRepository.findOne({
       where: { id: ehrId },
     });
@@ -93,6 +95,7 @@ export class ComiunicationService {
       },
     );
     await this.createComunication(
+      hospital,
       ComunicationType.OUTGOING,
       ComunicationStatus.DELIVERED,
       doctor,

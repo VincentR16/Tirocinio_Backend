@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/role.guard';
 import { ComiunicationService } from './comunication.service';
@@ -13,10 +21,14 @@ import { Comunication } from './comunication.entity';
 export class ComunicationController {
   constructor(private readonly comunicationService: ComiunicationService) {}
 
-  @Post(':ehrId/send')
+  @Post(':Id/send')
   @Roles(UserRoles.DOCTOR)
-  async send(@UserId() userId: string, @Param('ehrId') ehrId: string) {
-    return this.comunicationService.sendToOspidal(ehrId, userId);
+  async send(
+    @UserId() userId: string,
+    @Param('Id') ehrId: string,
+    @Body() hospital: string,
+  ) {
+    return this.comunicationService.sendToOspidal(ehrId, userId, hospital);
   }
 
   @Get()

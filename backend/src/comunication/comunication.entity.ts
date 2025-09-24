@@ -26,6 +26,11 @@ export class Comunication {
   @Column({ type: 'enum', enum: ComunicationStatus })
   status: ComunicationStatus;
 
+  @Column({ nullable: true })
+  hospital: string;
+
+  //questo rappresenta sempre il dottore all interno del sistema sia che sia inviata sia che sia ricevuta, nel caso di invio rappresnta chi invia
+  //nel caso di ricevuto rapprensenta chi riceve la comunicazione
   @ManyToOne(() => Doctor, (doctor) => doctor.comunication, {
     eager: true,
   })
