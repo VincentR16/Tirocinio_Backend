@@ -22,6 +22,7 @@ import {
 import axios from 'axios';
 import { ComunicationType } from 'src/common/types/comunicationType';
 import { ComunicationStatus } from 'src/common/types/comunicationStatus';
+import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
 
 type AnyResource =
   | Patient
@@ -34,16 +35,6 @@ type AnyResource =
 
 @Injectable()
 export class ComiunicationService {
-  async getComunications(
-    type: ComunicationType,
-    userId: string,
-  ): Promise<Comunication[]> {
-    const comunications = await this.comunicationRepository.find({
-      where: { doctor: { userId } as Doctor, type },
-    });
-    return comunications;
-    //todo implementare la paginazione, ancora non fatto perche non so esttamente quanti ne entrano in una table
-  }
   constructor(
     @InjectRepository(Comunication)
     private readonly comunicationRepository: Repository<Comunication>,
@@ -69,6 +60,40 @@ export class ComiunicationService {
     });
 
     await this.comunicationRepository.save(comunication);
+  }
+
+  async getComunications(
+    type: ComunicationType,
+    userId: string,
+    page: number,
+  ): Promise<PaginatedComunicationResponse> {
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    const [comunications, totalItems] = await this.comunicationRepository
+      .createQueryBuilder('c')
+      .innerJoin('c.doctor', 'd')
+      .where('d.userId = :userId', { userId })
+      .andWhere('c.type = :type', { type })
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return {
+      comunications,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        itemsPerPage: limit,
+      },
+    };
+    //todo implementare la paginazione, ancora non fatto perche non so esttamente quanti ne entrano in una table
   }
 
   async sendToOspidal(ehrId: string, doctorId: string, hospital: string) {
