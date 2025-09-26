@@ -72,7 +72,8 @@ export class ComiunicationService {
 
     const [comunications, totalItems] = await this.comunicationRepository
       .createQueryBuilder('c')
-      .innerJoin('c.doctor', 'd')
+      .innerJoinAndSelect('c.doctor', 'd')
+      .leftJoinAndSelect('d.user', 'user')
       .where('d.userId = :userId', { userId })
       .andWhere('c.type = :type', { type })
       .skip(skip)

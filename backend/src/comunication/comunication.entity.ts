@@ -36,6 +36,9 @@ export class Comunication {
   })
   doctor: Doctor;
 
+  //TODO AGGIUNGERE ASSULUTAMENTE CHIAVE ESTERNA AD EHR!!! MA CHE CAZZO STAVI PENSANDO
+  //! SERVE ASSOLUTAMENTE
+
   @Column({ type: 'jsonb' })
   message: Bundle | OperationOutcome;
 }
