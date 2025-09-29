@@ -1,4 +1,4 @@
-export enum ComunicationType {
+export enum CommunicationType {
   OUTGOING = 'Outgoing',
   INCOMING = 'Incoming',
 }

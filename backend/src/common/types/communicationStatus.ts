@@ -1,4 +1,4 @@
-export enum ComunicationStatus {
+export enum CommunicationStatus {
   PENDING = 'Pending',
   RECEIVED = 'Received',
   DELIVERED = 'Delivered',

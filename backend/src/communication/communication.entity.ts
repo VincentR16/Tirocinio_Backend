@@ -1,6 +1,6 @@
 import { Bundle, OperationOutcome } from 'fhir/r4';
-import { ComunicationStatus } from 'src/common/types/comunicationStatus';
-import { ComunicationType } from 'src/common/types/comunicationType';
+import { CommunicationStatus } from 'src/common/types/communicationStatus';
+import { CommunicationType } from 'src/common/types/communicationType';
 import { Doctor } from 'src/doctor/doctor.entity';
 import {
   Column,
@@ -20,11 +20,11 @@ export class Communication {
   @CreateDateColumn({ type: 'date' })
   createdAt!: Date;
 
-  @Column({ type: 'enum', enum: ComunicationType })
-  type: ComunicationType;
+  @Column({ type: 'enum', enum: CommunicationType })
+  type: CommunicationType;
 
-  @Column({ type: 'enum', enum: ComunicationStatus })
-  status: ComunicationStatus;
+  @Column({ type: 'enum', enum: CommunicationStatus })
+  status: CommunicationStatus;
 
   @Column({ nullable: true })
   hospital: string;

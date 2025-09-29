@@ -20,8 +20,8 @@ import {
   Procedure,
 } from 'fhir/r4';
 import axios from 'axios';
-import { ComunicationType } from 'src/common/types/comunicationType';
-import { ComunicationStatus } from 'src/common/types/comunicationStatus';
+import { CommunicationType } from 'src/common/types/communicationType';
+import { CommunicationStatus } from 'src/common/types/communicationStatus';
 import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
 
 type AnyResource =
@@ -46,8 +46,8 @@ export class CommunicationService {
 
   async createComunication(
     hospital: string,
-    type: ComunicationType,
-    status: ComunicationStatus,
+    type: CommunicationType,
+    status: CommunicationStatus,
     doctor: Doctor,
     message: Bundle | OperationOutcome,
   ) {
@@ -63,7 +63,7 @@ export class CommunicationService {
   }
 
   async getComunications(
-    type: ComunicationType,
+    type: CommunicationType,
     userId: string,
     page: number,
   ): Promise<PaginatedComunicationResponse> {
@@ -121,8 +121,8 @@ export class CommunicationService {
     );
     await this.createComunication(
       hospital,
-      ComunicationType.OUTGOING,
-      ComunicationStatus.DELIVERED,
+      CommunicationType.OUTGOING,
+      CommunicationStatus.DELIVERED,
       doctor,
       res.data,
     );

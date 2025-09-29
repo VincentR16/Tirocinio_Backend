@@ -13,7 +13,7 @@ import { CommunicationService } from './communication.service';
 import { UserId } from 'src/common/decoretor/user-id.decoretor';
 import { UserRoles } from 'src/common/types/userRoles';
 import { Roles } from 'src/common/decoretor/user-role.decoretor';
-import { ComunicationType } from 'src/common/types/comunicationType';
+import { CommunicationType } from 'src/common/types/communicationType';
 import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
 
 @Controller('communication')
@@ -35,7 +35,7 @@ export class CommunicationController {
   @Roles(UserRoles.DOCTOR)
   async getComunications(
     @UserId() userId: string,
-    @Query('type') type: ComunicationType,
+    @Query('type') type: CommunicationType,
     @Query('page') page: number,
   ): Promise<PaginatedComunicationResponse> {
     return this.communicationService.getComunications(type, userId, page);
