@@ -13,7 +13,7 @@ import {
 
 @Entity('comunication')
 @Index(['createdAt'])
-export class Comunication {
+export class Communication {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 

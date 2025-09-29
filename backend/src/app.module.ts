@@ -6,7 +6,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { EHRModule } from './ehr/ehr.module';
 import { TermilogyModule } from './terminology/terminology.module';
-import { ComunicationModule } from './comunication/comunication.module';
+import { CommunicationModule } from './communication/communication.module';
 
 @Module({
   imports: [
@@ -33,7 +33,7 @@ import { ComunicationModule } from './comunication/comunication.module';
     AuthModule,
     EHRModule,
     TermilogyModule,
-    ComunicationModule,
+    CommunicationModule,
   ],
   controllers: [],
   providers: [],

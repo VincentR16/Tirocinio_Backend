@@ -9,17 +9,17 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/role.guard';
-import { ComiunicationService } from './comunication.service';
+import { CommunicationService } from './communication.service';
 import { UserId } from 'src/common/decoretor/user-id.decoretor';
 import { UserRoles } from 'src/common/types/userRoles';
 import { Roles } from 'src/common/decoretor/user-role.decoretor';
 import { ComunicationType } from 'src/common/types/comunicationType';
 import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
 
-@Controller('comunication')
+@Controller('communication')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class ComunicationController {
-  constructor(private readonly comunicationService: ComiunicationService) {}
+export class CommunicationController {
+  constructor(private readonly communicationService: CommunicationService) {}
 
   @Post(':Id/send')
   @Roles(UserRoles.DOCTOR)
@@ -28,7 +28,7 @@ export class ComunicationController {
     @Param('Id') ehrId: string,
     @Body('hospital') hospital: string,
   ) {
-    return this.comunicationService.sendToOspidal(ehrId, userId, hospital);
+    return this.communicationService.sendToOspidal(ehrId, userId, hospital);
   }
 
   @Get()
@@ -38,6 +38,6 @@ export class ComunicationController {
     @Query('type') type: ComunicationType,
     @Query('page') page: number,
   ): Promise<PaginatedComunicationResponse> {
-    return this.comunicationService.getComunications(type, userId, page);
+    return this.communicationService.getComunications(type, userId, page);
   }
 }

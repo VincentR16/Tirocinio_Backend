@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Doctor } from 'src/doctor/doctor.entity';
 import { EHR } from 'src/ehr/ehr.entity';
 import { Repository } from 'typeorm/repository/Repository';
-import { Comunication } from './comunication.entity';
+import { Communication } from './communication.entity';
 import {
   AllergyIntolerance,
   Bundle,
@@ -34,10 +34,10 @@ type AnyResource =
   | AllergyIntolerance;
 
 @Injectable()
-export class ComiunicationService {
+export class CommunicationService {
   constructor(
-    @InjectRepository(Comunication)
-    private readonly comunicationRepository: Repository<Comunication>,
+    @InjectRepository(Communication)
+    private readonly comunicationRepository: Repository<Communication>,
     @InjectRepository(EHR)
     private readonly ehrRepository: Repository<EHR>,
     @InjectRepository(Doctor)

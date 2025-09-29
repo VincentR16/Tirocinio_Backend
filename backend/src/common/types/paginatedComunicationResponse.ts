@@ -1,7 +1,7 @@
-import { Comunication } from 'src/comunication/comunication.entity';
+import { Communication } from 'src/communication/communication.entity';
 
 export interface PaginatedComunicationResponse {
-  comunications: Comunication[];
+  comunications: Communication[];
   pagination: {
     currentPage: number;
     itemsPerPage: number;
