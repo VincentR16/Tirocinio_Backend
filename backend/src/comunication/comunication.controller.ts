@@ -26,7 +26,7 @@ export class ComunicationController {
   async send(
     @UserId() userId: string,
     @Param('Id') ehrId: string,
-    @Body() hospital: string,
+    @Body('hospital') hospital: string,
   ) {
     return this.comunicationService.sendToOspidal(ehrId, userId, hospital);
   }

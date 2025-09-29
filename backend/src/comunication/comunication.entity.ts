@@ -17,7 +17,7 @@ export class Comunication {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'date' })
   createdAt!: Date;
 
   @Column({ type: 'enum', enum: ComunicationType })

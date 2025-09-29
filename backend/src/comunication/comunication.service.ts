@@ -67,7 +67,7 @@ export class ComiunicationService {
     userId: string,
     page: number,
   ): Promise<PaginatedComunicationResponse> {
-    const limit = 10;
+    const limit = 8;
     const skip = (page - 1) * limit;
 
     const [comunications, totalItems] = await this.comunicationRepository
@@ -83,7 +83,7 @@ export class ComiunicationService {
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
-
+    console.log('ecco il messaggio', comunications[0].message);
     return {
       comunications,
       pagination: {
@@ -94,7 +94,6 @@ export class ComiunicationService {
         itemsPerPage: limit,
       },
     };
-    //todo implementare la paginazione, ancora non fatto perche non so esttamente quanti ne entrano in una table
   }
 
   async sendToOspidal(ehrId: string, doctorId: string, hospital: string) {
