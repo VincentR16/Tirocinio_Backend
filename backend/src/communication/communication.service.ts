@@ -45,6 +45,7 @@ export class CommunicationService {
   ) {}
 
   async createComunication(
+    ehrId: string,
     hospital: string,
     type: CommunicationType,
     status: CommunicationStatus,
@@ -52,6 +53,7 @@ export class CommunicationService {
     message: Bundle | OperationOutcome,
   ) {
     const comunication = this.comunicationRepository.create({
+      ehr: { id: ehrId } as EHR,
       hospital,
       type,
       status,
@@ -74,16 +76,17 @@ export class CommunicationService {
       .createQueryBuilder('c')
       .innerJoinAndSelect('c.doctor', 'd')
       .leftJoinAndSelect('d.user', 'user')
+      .leftJoinAndSelect('c.ehr', 'ehr')
       .where('d.userId = :userId', { userId })
       .andWhere('c.type = :type', { type })
       .skip(skip)
       .take(limit)
+      .orderBy('c.createdAt', 'DESC')
       .getManyAndCount();
 
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
-    console.log('ecco il messaggio', comunications[0].message);
     return {
       comunications,
       pagination: {
@@ -120,6 +123,7 @@ export class CommunicationService {
       },
     );
     await this.createComunication(
+      ehrId,
       hospital,
       CommunicationType.OUTGOING,
       CommunicationStatus.DELIVERED,

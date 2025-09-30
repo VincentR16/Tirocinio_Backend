@@ -13,6 +13,7 @@ import { Doctor } from 'src/doctor/doctor.entity';
 
 @Entity()
 export class User {
+  @Exclude()
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -45,6 +46,7 @@ export class User {
   password: string;
 
   @Column({})
+  @Exclude()
   twoFactorAuthenticationSecret: string;
 
   @Exclude()

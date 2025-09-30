@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   AllergyIntolerance as FhirAllergyIntolerance,
   Encounter as FhirEncounter,
@@ -7,6 +8,7 @@ import {
   Patient as FhirPatient,
   Condition as FhirCondition,
 } from 'fhir/r4';
+import { Communication } from 'src/communication/communication.entity';
 import { Doctor } from 'src/doctor/doctor.entity';
 import {
   Entity,
@@ -15,6 +17,7 @@ import {
   ManyToOne,
   Column,
   Index,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('ehr_records')
@@ -54,6 +57,12 @@ export class EHR {
     eager: true,
   })
   createdBy: Doctor;
+
+  @Exclude()
+  @OneToMany(() => Communication, (communication) => communication.ehr, {
+    nullable: true,
+  })
+  communications: Communication[];
 
   @Column()
   patientEmail: string;
