@@ -7,6 +7,7 @@ import {
   Procedure as FhirProcedure,
   Patient as FhirPatient,
   Condition as FhirCondition,
+  Bundle,
 } from 'fhir/r4';
 import { Communication } from 'src/communication/communication.entity';
 import { Doctor } from 'src/doctor/doctor.entity';
@@ -29,7 +30,7 @@ export class EHR {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  // Blocchi FHIR salvati come JSONB (non entity TypeORM)
+  // Blocchi FHIR salvati come JSONB
   @Column({ type: 'jsonb' })
   patient: FhirPatient;
 
@@ -50,6 +51,9 @@ export class EHR {
 
   @Column({ type: 'jsonb', default: [] })
   medications: FhirMedicationRequest[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  bundle: Bundle;
 
   // Chi crea l’EHR
   @ManyToOne(() => Doctor, (doctor) => doctor.ehr, {
