@@ -35,7 +35,9 @@ export class Communication {
   })
   doctor: Doctor;
 
-  @ManyToOne(() => EHR, (ehr) => ehr.communications)
+  @ManyToOne(() => EHR, (ehr) => ehr.communications, {
+    nullable: true,
+  })
   ehr: EHR;
 
   @Column({ type: 'jsonb' })

@@ -7,9 +7,18 @@ import { AuthModule } from './auth/auth.module';
 import { EHRModule } from './ehr/ehr.module';
 import { TermilogyModule } from './terminology/terminology.module';
 import { CommunicationModule } from './communication/communication.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 30000,
+          limit: 5,
+        },
+      ],
+    }),
     ConfigModule.forRoot({
       envFilePath: ['.env'],
       validationSchema: configValidationSchema,

@@ -15,13 +15,16 @@ import { UserRoles } from 'src/common/types/userRoles';
 import { Roles } from 'src/common/decoretor/user-role.decoretor';
 import { CommunicationType } from 'src/common/types/communicationType';
 import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
+import { ExternalCommunicationDto } from './dto/externalCommunication.dto';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('communication')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(ThrottlerGuard)
 export class CommunicationController {
   constructor(private readonly communicationService: CommunicationService) {}
 
   @Post(':Id/send')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRoles.DOCTOR)
   async send(
     @UserId() userId: string,
@@ -32,6 +35,8 @@ export class CommunicationController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @SkipThrottle()
   @Roles(UserRoles.DOCTOR)
   async getComunications(
     @UserId() userId: string,
@@ -39,5 +44,15 @@ export class CommunicationController {
     @Query('page') page: number,
   ): Promise<PaginatedComunicationResponse> {
     return this.communicationService.getComunications(type, userId, page);
+  }
+
+  @Post('/receive')
+  @Throttle({ default: { ttl: 30000, limit: 2 } })
+  async receiveExternalCommunication(
+    @Body() externalCommunicationDto: ExternalCommunicationDto,
+  ) {
+    return this.communicationService.externalCommunication(
+      externalCommunicationDto,
+    );
   }
 }

@@ -172,12 +172,12 @@ export class AuthService {
     dto: twoFactorAuthenticationDto,
     req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { userId, twoFactorAuthenticationCode } = dto;
+    const { email, twoFactorAuthenticationCode } = dto;
 
     const user = await this.userRepository.findOne({
-      where: { id: userId },
+      where: { email },
     });
-    if (!user) throw new UnauthorizedException('Invalid UserId');
+    if (!user) throw new UnauthorizedException('Invalid Email');
 
     //validate the 2fa code
     const isCodeValid = authenticator.verify({

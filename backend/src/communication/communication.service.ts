@@ -13,6 +13,8 @@ import axios from 'axios';
 import { CommunicationType } from 'src/common/types/communicationType';
 import { CommunicationStatus } from 'src/common/types/communicationStatus';
 import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
+import { ExternalCommunicationDto } from './dto/externalCommunication.dto';
+import { Fhir } from 'fhir';
 
 @Injectable()
 export class CommunicationService {
@@ -115,5 +117,32 @@ export class CommunicationService {
       httpStatus: res.status,
       data: res.data,
     };
+  }
+
+  async externalCommunication(
+    externalCommunicationDto: ExternalCommunicationDto,
+  ) {
+    const { email, json } = externalCommunicationDto;
+    const doctor = await this.doctorRespository.findOne({
+      where: {
+        user: {
+          email: email,
+        },
+      },
+    });
+    if (!doctor) throw new BadRequestException('Email not valid');
+
+    const fhir = new Fhir();
+    const result = fhir.validate(json, { errorOnUnexpected: true });
+
+    if (!result.valid) return result.messages;
+
+    const communication = this.comunicationRepository.create({
+      type: CommunicationType.INCOMING,
+      status: CommunicationStatus.PENDING,
+      doctor,
+      message: json,
+    });
+    await this.comunicationRepository.save(communication);
   }
 }
