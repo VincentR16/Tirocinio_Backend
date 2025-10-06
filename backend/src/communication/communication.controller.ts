@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -17,6 +18,7 @@ import { CommunicationType } from 'src/common/types/communicationType';
 import { PaginatedComunicationResponse } from 'src/common/types/paginatedComunicationResponse';
 import { ExternalCommunicationDto } from './dto/externalCommunication.dto';
 import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { CommunicationStatus } from 'src/common/types/communicationStatus';
 
 @Controller('communication')
 @UseGuards(ThrottlerGuard)
@@ -54,5 +56,14 @@ export class CommunicationController {
     return this.communicationService.externalCommunication(
       externalCommunicationDto,
     );
+  }
+
+  @Patch(':Id/status')
+  async updateCommunication(
+    @UserId() userId: string,
+    @Param('Id') communicationId: string,
+    @Body('status') status: CommunicationStatus,
+  ) {
+    return this.communicationService.update(userId, communicationId, status);
   }
 }

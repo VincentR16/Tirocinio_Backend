@@ -59,12 +59,6 @@ export class EHRService {
       createdBy: doctor,
       patientEmail: dto.patientEmail,
       patient: dto.patient,
-      encounter: dto.encounter,
-      allergies: dto.allergies ?? [],
-      observations: dto.observations ?? [],
-      condition: dto.condition,
-      procedure: dto.procedure,
-      medications: dto.medications ?? [],
       bundle,
     });
 

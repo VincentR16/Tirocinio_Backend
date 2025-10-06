@@ -8,7 +8,7 @@ import { Doctor } from 'src/doctor/doctor.entity';
 import { EHR } from 'src/ehr/ehr.entity';
 import { Repository } from 'typeorm/repository/Repository';
 import { Communication } from './communication.entity';
-import { Bundle, OperationOutcome } from 'fhir/r4';
+import { Bundle, OperationOutcome, Patient } from 'fhir/r4';
 import axios from 'axios';
 import { CommunicationType } from 'src/common/types/communicationType';
 import { CommunicationStatus } from 'src/common/types/communicationStatus';
@@ -122,7 +122,7 @@ export class CommunicationService {
   async externalCommunication(
     externalCommunicationDto: ExternalCommunicationDto,
   ) {
-    const { email, json } = externalCommunicationDto;
+    const { email, json, hospital } = externalCommunicationDto;
     const doctor = await this.doctorRespository.findOne({
       where: {
         user: {
@@ -141,8 +141,50 @@ export class CommunicationService {
       type: CommunicationType.INCOMING,
       status: CommunicationStatus.PENDING,
       doctor,
+      hospital,
       message: json,
     });
+    await this.comunicationRepository.save(communication);
+  }
+
+  async update(
+    userId: string,
+    communicationId: string,
+    status: CommunicationStatus,
+  ) {
+    if (
+      status !== CommunicationStatus.CANCELLED &&
+      status !== CommunicationStatus.RECEIVED
+    ) {
+      throw new BadRequestException('Bad request!');
+    }
+
+    const communication = await this.comunicationRepository.findOne({
+      where: { id: communicationId, status: CommunicationStatus.PENDING },
+    });
+    if (!communication) throw new BadRequestException('No communication found');
+
+    const doctor = await this.doctorRespository.findOne({
+      where: { userId },
+    });
+    if (!doctor) throw new BadRequestException('No doctor found');
+
+    const bundle = communication.message as Bundle;
+    const patient = bundle.entry?.[0]?.resource as Patient | undefined;
+    const patientEmail =
+      patient?.telecom?.find((t) => t.system === 'email')?.value ?? 'N/A';
+
+    const ehr = this.ehrRepository.create({
+      patient,
+      patientEmail,
+      createdBy: doctor,
+      bundle: bundle,
+    });
+    await this.ehrRepository.save(ehr);
+
+    communication.ehr = ehr;
+    communication.status = status;
+
     await this.comunicationRepository.save(communication);
   }
 }
