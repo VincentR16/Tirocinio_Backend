@@ -4,6 +4,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptor/transform.interceptor';
 import { join } from 'path';
 import * as express from 'express';
+import { LoggingInterceptor } from './common/interceptor/logger.interceptor';
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -26,7 +27,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // Lancia errore se ci sono proprietà extra
     }),
   );
-  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalInterceptors(
+    new TransformInterceptor(),
+    new LoggingInterceptor(),
+  );
   await app.listen(process.env.PORT ?? 3000);
   logger.log(`Application listening on port ${process.env.PORT ?? 3000}`);
 }
