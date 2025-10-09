@@ -164,27 +164,28 @@ export class CommunicationService {
     });
     if (!communication) throw new BadRequestException('No communication found');
 
-    const doctor = await this.doctorRespository.findOne({
-      where: { userId },
-    });
-    if (!doctor) throw new BadRequestException('No doctor found');
+    if (status == CommunicationStatus.CANCELLED) {
+      const doctor = await this.doctorRespository.findOne({
+        where: { userId },
+      });
+      if (!doctor) throw new BadRequestException('No doctor found');
 
-    const bundle = communication.message as Bundle;
-    const patient = bundle.entry?.[0]?.resource as Patient | undefined;
-    const patientEmail =
-      patient?.telecom?.find((t) => t.system === 'email')?.value ?? 'N/A';
+      const bundle = communication.message as Bundle;
+      const patient = bundle.entry?.[0]?.resource as Patient | undefined;
+      const patientEmail =
+        patient?.telecom?.find((t) => t.system === 'email')?.value ?? 'N/A';
 
-    const ehr = this.ehrRepository.create({
-      patient,
-      patientEmail,
-      createdBy: doctor,
-      bundle: bundle,
-    });
-    await this.ehrRepository.save(ehr);
+      const ehr = this.ehrRepository.create({
+        patient,
+        patientEmail,
+        createdBy: doctor,
+        bundle: bundle,
+      });
+      await this.ehrRepository.save(ehr);
 
-    communication.ehr = ehr;
+      communication.ehr = ehr;
+    }
     communication.status = status;
-
     await this.comunicationRepository.save(communication);
   }
 }

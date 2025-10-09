@@ -59,6 +59,7 @@ export class CommunicationController {
   }
 
   @Patch(':Id/status')
+  @SkipThrottle()
   async updateCommunication(
     @UserId() userId: string,
     @Param('Id') communicationId: string,
