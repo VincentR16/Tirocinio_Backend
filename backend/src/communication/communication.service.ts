@@ -164,7 +164,7 @@ export class CommunicationService {
     });
     if (!communication) throw new BadRequestException('No communication found');
 
-    if (status == CommunicationStatus.CANCELLED) {
+    if (status == CommunicationStatus.RECEIVED) {
       const doctor = await this.doctorRespository.findOne({
         where: { userId },
       });
@@ -182,9 +182,9 @@ export class CommunicationService {
         bundle: bundle,
       });
       await this.ehrRepository.save(ehr);
-
       communication.ehr = ehr;
     }
+
     communication.status = status;
     await this.comunicationRepository.save(communication);
   }
