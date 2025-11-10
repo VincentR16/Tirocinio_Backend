@@ -1,4 +1,4 @@
-# 🏥 MedTrust Backend
+#  MedTrust Backend
 
 MedTrust is a secure and modular Electronic Health Record (EHR) management system designed to ensure data integrity, access control, and interoperability between healthcare professionals and patients.  
 This repository contains the **backend** implementation, developed with **NestJS**, **TypeScript**, and **PostgreSQL**, following the principles of **modularity**, **scalability**, and **security** (Zero Trust Architecture).
